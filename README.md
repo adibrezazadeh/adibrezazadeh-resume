@@ -1,10 +1,43 @@
-# Adib Rezazadeh — portfolio
+# Adib Rezazadeh — 3D portfolio
 
-Portfolio of **Adib Rezazadeh**, full-stack engineer and technical lead. Persian: ادیب رضازاده. Arabic: أديب رضازاده. The site is a bright, modern studio you can walk into: the monitor opens **AdibOS**, the frames are the work, the shelves are the stack, and the desk phone is contact.
+An interactive 3D office portfolio you can walk into, in **English, Persian, and Arabic** (RTL for fa/ar), with a fast no‑WebGL "simple mode" for phones. Open source under the MIT license, so you can fork it as a template for your own portfolio.
 
-Languages: [English](/en), [فارسی](/fa), and [العربية](/ar). Persian and Arabic use RTL. A language picker is the front door.
+**Live demo: [adibrezazadeh.ir](https://adibrezazadeh.ir)**
 
-On a phone, a narrow window, or a machine that prefers reduced motion, the site opens in **simple mode**: the same facts, without WebGL. The button in the corner switches either way.
+| Boot screen | Simple mode (desktop) | Persian, mobile |
+| --- | --- | --- |
+| ![Boot screen](docs/screenshots/boot-en.jpg) | ![Simple mode](docs/screenshots/simple-en.jpg) | ![Persian mobile](docs/screenshots/simple-fa-mobile.jpg) |
+
+## Stack
+
+- [Next.js](https://nextjs.org) App Router + TypeScript
+- [React Three Fiber](https://r3f.docs.pmnd.rs) / three.js for the room (`components/scene/OfficeCanvas.tsx`)
+- Built-in i18n for `en`, `fa`, `ar` via the `app/[lang]/` route, with RTL layout for Persian and Arabic
+- Web Audio for all sounds, CC0 models and textures from Poly Haven
+
+## Use it as your own portfolio
+
+1. **Fork** this repo (or click "Use this template") and clone it.
+2. **Edit your content in `lib/profile.ts`.** Everything lives there, in all three languages:
+   - `person`: name, localized names, email, phone, LinkedIn, GitHub, location, role line, summary
+   - `stack`, `leadership`, `education`
+   - `projects`: roles and work shown on the frames and in AdibOS
+   - `ui`: every interface string, per language (`en`, `fa`, `ar`)
+3. **Text built from that data**: `lib/resume.ts` (resume / downloadable text), `lib/terminal.ts` (terminal commands), `lib/assistant.ts` (desk assistant answers), `lib/seo.ts` and `lib/site.ts` (metadata, sitemap, JSON-LD).
+4. **Images**: put your portrait at `public/me.jpg`, project images in `public/frames/`, logos in `public/marks/`. Remove Adib's.
+5. **Fonts**: remove `app/fonts/emkan/` and change the `localFont` setup in `app/layout.tsx` to an openly licensed font.
+6. Drop a language by removing it from `LANGS` in `lib/types.ts` and its entries in `lib/profile.ts`.
+
+## Deploy on Vercel
+
+1. Push your fork to GitHub.
+2. In Vercel, **Add New → Project**, import the repo. The Next.js preset needs no changes.
+3. Optional environment variables: `NEXT_PUBLIC_SITE_URL` (your domain), `GOOGLE_SITE_VERIFICATION`, `BING_SITE_VERIFICATION`, and `ASSISTANT_API_KEY` / `ASSISTANT_API_URL` / `ASSISTANT_MODEL` for the optional assistant API.
+4. Deploy, then add your custom domain under **Settings → Domains**.
+
+## Credit
+
+The code is MIT licensed, so you don't have to, but if you use this as a template, a small link back is appreciated: "Based on [Adib Rezazadeh's portfolio](https://github.com/adibrezazadeh/adibrezazadeh-resume)". A star or a message showing your version is welcome too. Inspired by [henryheffernan.com](https://henryheffernan.com).
 
 ## Run locally
 
@@ -49,7 +82,7 @@ Facts come from Adib's resume and the projects' public sites. Nothing else is fi
 
 Put a square portrait at `public/me.jpg` and it appears in AdibOS's About window, at the top of simple mode, and in a frame on the shelf. Without the file, nothing is requested.
 
-The room uses CC0 models and textures from [Poly Haven](https://polyhaven.com), compressed for the web; the modern furniture and devices are modeled in code. See `public/textures/CREDITS.txt`. Persian and Arabic are set in Emkan (FontIran), used under the owner's licence: it must not be redistributed, so keep this repository private.
+The room uses CC0 models and textures from [Poly Haven](https://polyhaven.com), compressed for the web; the modern furniture and devices are modeled in code. See `public/textures/CREDITS.txt`. Persian and Arabic are set in Emkan (FontIran), used under the owner's licence. Emkan is **not** covered by the MIT license and must not be redistributed: swap it for an open font (for example Vazirmatn) in your fork.
 
 ## Optional assistant API
 
@@ -71,3 +104,7 @@ BING_SITE_VERIFICATION=     # Bing Webmaster Tools msvalidate.01 code
 ## Deploy
 
 The app is a Next.js App Router project and deploys on Vercel with no extra services. `npm run build` is the production build.
+
+## License
+
+[MIT](LICENSE) © 2026 Adib Rezazadeh. The Emkan font, personal content, and photos are excluded; see [LICENSE](LICENSE).
