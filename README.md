@@ -22,15 +22,15 @@ npm start
 
 ## What is in the room
 
-- **Monitor** — ShahrokhOS: project folders, a resume you can read or download, and a terminal (`help`, `whoami`, `projects`, `contact`, plus `skills`, `education`, `open`, `resume`, `clear`).
+- **Monitor** — a thin-bezel display running ShahrokhOS: project folders, a resume you can read or download, and a terminal (`help`, `whoami`, `projects`, `contact`, plus `skills`, `education`, `open`, `resume`, `clear`).
+- **Phone on a stand** — email, phone, LinkedIn, GitHub.
 - **Frames** — roles and selected work, with the public links that exist.
 - **Bookshelf** — the stack and leadership list from the resume.
-- **Phone** — email, phone, LinkedIn, GitHub.
 - **Desk assistant** — answers in the language you picked, from local notes. It does not call a paid API unless you opt in.
 
 Facts come from Adib's resume. Stogite, Hubly, Glonova, and Meraas Gallery also use those projects' public pages. Nothing else is filled in.
 
-The room uses CC0 photogrammetry models, textures, and the `studio_small_09` HDRI from [Poly Haven](https://polyhaven.com), compressed for the web. See `public/textures/CREDITS.txt`. Poly Haven does not publish a keyboard, mouse, or headphone scan, so those three are not in the room.
+The room uses CC0 photogrammetry models, textures, and the `studio_small_09` HDRI from [Poly Haven](https://polyhaven.com), compressed for the web. See `public/textures/CREDITS.txt`. The monitor, laptop, keyboard, mouse, LED lamp, and phone are modeled here; Poly Haven has no modern versions of those.
 
 ## Optional assistant API
 

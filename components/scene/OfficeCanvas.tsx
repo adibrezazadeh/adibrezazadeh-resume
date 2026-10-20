@@ -26,11 +26,11 @@ const HOME: Pose = { id: "room", pos: [0.12, 1.34, 2.22], look: [-0.02, 0.98, -0
 const INTRO: Pose = { id: "intro", pos: [0.95, 1.68, 3.05], look: [0.05, 0.92, -0.7] };
 
 const TABLE_TOP = 0.958;
-const TV_POS: [number, number, number] = [-0.22, TABLE_TOP, -0.5];
+const MONITOR_POS: [number, number, number] = [-0.06, TABLE_TOP, -0.46];
 const SCREEN = {
-  x: TV_POS[0],
-  y: TV_POS[1] + 0.26,
-  z: TV_POS[2] + 0.2,
+  x: MONITOR_POS[0],
+  y: MONITOR_POS[1] + 0.36,
+  z: MONITOR_POS[2] + 0.016,
 };
 
 function frameAt(index: number): [number, number, number] {
@@ -40,9 +40,9 @@ function frameAt(index: number): [number, number, number] {
 }
 
 function poseFor(selection: Selection): Pose {
-  if (selection.kind === "os") return { id: "os", pos: [SCREEN.x, SCREEN.y, SCREEN.z + 0.98], look: [SCREEN.x, SCREEN.y, SCREEN.z] };
+  if (selection.kind === "os") return { id: "os", pos: [SCREEN.x, SCREEN.y, SCREEN.z + 1.02], look: [SCREEN.x, SCREEN.y, SCREEN.z] };
   if (selection.kind === "skills") return { id: "skills", pos: [0.15, 1.22, -0.72], look: [1.05, 1.15, -1.85] };
-  if (selection.kind === "contact") return { id: "contact", pos: [0.28, 1.12, 0.95], look: [0.72, 1.0, 0.12] };
+  if (selection.kind === "contact") return { id: "contact", pos: [0.42, 1.16, 1.02], look: [0.96, 1.04, 0.2] };
   if (selection.kind === "project") {
     const index = Math.max(0, projects.findIndex((project) => project.id === selection.id));
     const frame = frameAt(index);
@@ -285,14 +285,11 @@ function useMaps(): Maps {
 const MODEL = {
   table: "/models/painted_wooden_table/painted_wooden_table_1k.gltf",
   chair: "/models/GreenChair_01/GreenChair_01_1k.gltf",
-  tv: "/models/Television_01/Television_01_1k.gltf",
-  lamp: "/models/desk_lamp_arm_01/desk_lamp_arm_01_1k.gltf",
   shelf: "/models/wooden_bookshelf_worn/wooden_bookshelf_worn_1k.gltf",
   books: "/models/book_encyclopedia_set_01/book_encyclopedia_set_01_1k.gltf",
   plant: "/models/potted_plant_01/potted_plant_01_1k.gltf",
   notebook: "/models/binder_notebook/binder_notebook_1k.gltf",
   pen: "/models/stationery_supplies/stationery_supplies_1k.gltf",
-  laptop: "/models/classic_laptop/classic_laptop_1k.gltf",
   cables: "/models/modular_electric_cables/modular_electric_cables_1k.gltf",
 } as const;
 
@@ -389,7 +386,7 @@ function Dust({ reduce }: { reduce: boolean }) {
     attr.needsUpdate = true;
   });
   return (
-    <points ref={ref} position={[0.45, 1.15, -0.2]}>
+    <points ref={ref} position={[0.55, 1.2, -0.05]}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
@@ -398,51 +395,175 @@ function Dust({ reduce }: { reduce: boolean }) {
   );
 }
 
-function DeskLamp() {
-  const lamp = useProp(MODEL.lamp);
+function LedLamp() {
   const light = useRef<THREE.SpotLight>(null);
   const target = useRef<THREE.Object3D>(null);
   useEffect(() => {
     if (light.current && target.current) light.current.target = target.current;
   }, []);
   return (
-    <group position={[0.95, TABLE_TOP + 0.088, -0.42]} rotation={[0, Math.PI * 0.9, 0]}>
-      <primitive object={lamp} />
-      <object3D ref={target} position={[0.05, 0.12, -0.95]} />
-      <spotLight
-        ref={light}
-        position={[0, 0.7, -0.17]}
-        angle={0.62}
-        penumbra={0.82}
-        intensity={160}
-        color="#ffb15a"
-        distance={4.2}
-        decay={2}
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0004}
-        shadow-normalBias={0.04}
-      />
-      <pointLight position={[0, 0.69, -0.18]} color="#ffe1b5" intensity={14} distance={1.5} decay={2} />
+    <group position={[0.82, TABLE_TOP, -0.22]} rotation={[0, -0.85, 0]}>
+      <RoundedBox args={[0.13, 0.008, 0.09]} radius={0.002} smoothness={3} position={[0, 0.004, 0]} castShadow>
+        <meshStandardMaterial color="#d7dadf" metalness={0.92} roughness={0.18} />
+      </RoundedBox>
+      <mesh position={[0.07, 0.17, 0]} rotation={[0, 0, 0.62]} castShadow>
+        <cylinderGeometry args={[0.007, 0.008, 0.32, 16]} />
+        <meshStandardMaterial color="#e6e9ed" metalness={0.9} roughness={0.18} />
+      </mesh>
+      <group position={[0.18, 0.33, 0.01]} rotation={[1.2, 0.1, 0.2]}>
+        <RoundedBox args={[0.2, 0.012, 0.048]} radius={0.003} smoothness={3} castShadow>
+          <meshStandardMaterial color="#f2f4f7" metalness={0.62} roughness={0.28} />
+        </RoundedBox>
+        <mesh position={[0, -0.007, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[0.16, 0.03]} />
+          <meshStandardMaterial color="#fff4e6" emissive="#ffe0bf" emissiveIntensity={3.2} toneMapped={false} />
+        </mesh>
+        <object3D ref={target} position={[0, -0.7, 0.05]} />
+        <spotLight
+          ref={light}
+          position={[0, -0.03, 0]}
+          angle={0.72}
+          penumbra={0.65}
+          intensity={95}
+          color="#fff3e4"
+          distance={3.4}
+          decay={2}
+          castShadow
+          shadow-mapSize={[1024, 1024]}
+          shadow-bias={-0.00045}
+          shadow-normalBias={0.035}
+        />
+        <pointLight position={[0, -0.04, 0]} color="#ffe7cc" intensity={6} distance={1.4} decay={2} />
+      </group>
     </group>
   );
 }
 
 function Monitor({ interactive, lang, onLeave }: { interactive: boolean; lang: Lang; onLeave: () => void }) {
-  const tv = useProp(MODEL.tv);
   return (
-    <group position={TV_POS}>
-      <primitive object={tv} />
-      <mesh position={[0, 0.26, 0.186]}>
-        <planeGeometry args={[0.44, 0.32]} />
-        <meshBasicMaterial color="#100c09" />
+    <group position={MONITOR_POS}>
+      <RoundedBox args={[0.24, 0.008, 0.16]} radius={0.003} smoothness={3} position={[0, 0.004, 0.03]} castShadow>
+        <meshStandardMaterial color="#c9ced4" metalness={0.94} roughness={0.18} />
+      </RoundedBox>
+      <mesh position={[0, 0.11, 0]} castShadow>
+        <boxGeometry args={[0.03, 0.2, 0.018]} />
+        <meshStandardMaterial color="#d5d9de" metalness={0.92} roughness={0.16} />
       </mesh>
-      <Html transform distanceFactor={0.162} position={[0, 0.258, 0.2]} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
-        <div className="crt-screen" style={{ width: 900, height: 640, pointerEvents: interactive ? "auto" : "none" }}>
-          <ShahrokhOS lang={lang} embedded onLeave={onLeave} />
-          <div className="crt-scan" />
-        </div>
-      </Html>
+      <group position={[0, 0.36, 0]}>
+        <RoundedBox args={[0.74, 0.426, 0.016]} radius={0.004} smoothness={4} castShadow>
+          <meshStandardMaterial color="#1b1e22" metalness={0.78} roughness={0.26} />
+        </RoundedBox>
+        <mesh position={[0, 0, 0.006]}>
+          <planeGeometry args={[0.72, 0.408]} />
+          <meshStandardMaterial color="#9eb6d4" emissive="#b9cce4" emissiveIntensity={0.45} toneMapped={false} />
+        </mesh>
+        <mesh position={[0, 0, 0.008]}>
+          <planeGeometry args={[0.708, 0.398]} />
+          <meshStandardMaterial color="#07090d" roughness={0.35} metalness={0.05} />
+        </mesh>
+        <Html transform distanceFactor={0.172} position={[0, 0, 0.011]} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
+          <div className="ips-screen" style={{ width: 1600, height: 900, pointerEvents: interactive ? "auto" : "none" }}>
+            <ShahrokhOS lang={lang} embedded onLeave={onLeave} />
+            <div className="ips-glass" />
+          </div>
+        </Html>
+      </group>
+    </group>
+  );
+}
+
+function Keyboard() {
+  const caps = useMemo(() => {
+    const rows = [14, 14, 13, 12, [1.1, 1.1, 4.2, 1.1, 1.1]];
+    const list: { x: number; z: number; w: number }[] = [];
+    rows.forEach((count, row) => {
+      const widths = Array.isArray(count) ? count : Array.from({ length: count }, () => 1);
+      const pitch = 0.024;
+      const total = widths.reduce((sum, units) => sum + units * pitch, 0);
+      let cursor = -total / 2;
+      widths.forEach((units) => {
+        const w = units * pitch - 0.004;
+        list.push({ x: cursor + w / 2, z: -0.046 + row * 0.022, w });
+        cursor += units * pitch;
+      });
+    });
+    return list;
+  }, []);
+  return (
+    <group position={[-0.04, TABLE_TOP, 0.06]} rotation={[0, 0.06, 0]}>
+      <RoundedBox args={[0.4, 0.012, 0.142]} radius={0.003} smoothness={3} position={[0, 0.006, 0]} castShadow receiveShadow>
+        <meshStandardMaterial color="#d0d4d8" metalness={0.88} roughness={0.22} />
+      </RoundedBox>
+      <mesh position={[0, 0.0122, 0.004]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.36, 0.11]} />
+        <meshStandardMaterial color="#3a2e28" emissive="#ffb37a" emissiveIntensity={0.35} />
+      </mesh>
+      {caps.map((cap) => (
+        <RoundedBox key={`${cap.x}-${cap.z}`} args={[cap.w, 0.007, 0.016]} radius={0.002} smoothness={2} position={[cap.x, 0.016, cap.z]} castShadow>
+          <meshStandardMaterial color="#2a2d32" roughness={0.42} metalness={0.08} />
+        </RoundedBox>
+      ))}
+    </group>
+  );
+}
+
+function Mouse() {
+  return (
+    <group position={[0.28, TABLE_TOP + 0.012, 0.1]} rotation={[0, 0.35, 0]}>
+      <mesh castShadow scale={[1, 0.38, 1.28]}>
+        <sphereGeometry args={[0.03, 36, 24]} />
+        <meshStandardMaterial color="#d5d8dc" metalness={0.84} roughness={0.22} />
+      </mesh>
+      <mesh position={[0, 0.012, -0.006]} rotation={[1.2, 0, 0]} castShadow>
+        <cylinderGeometry args={[0.0045, 0.0045, 0.014, 14]} />
+        <meshStandardMaterial color="#8e949b" metalness={0.75} roughness={0.28} />
+      </mesh>
+    </group>
+  );
+}
+
+function Laptop() {
+  return (
+    <group position={[0.66, TABLE_TOP, 0.02]} rotation={[0, -0.62, 0]}>
+      <RoundedBox args={[0.318, 0.011, 0.218]} radius={0.004} smoothness={4} position={[0, 0.007, 0]} castShadow>
+        <meshStandardMaterial color="#d8dbe0" metalness={0.9} roughness={0.2} />
+      </RoundedBox>
+      <mesh position={[0, 0.0132, 0.012]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.27, 0.15]} />
+        <meshStandardMaterial color="#1a1d22" roughness={0.55} />
+      </mesh>
+      <group position={[0, 0.012, -0.102]} rotation={[0.48, 0, 0]}>
+        <RoundedBox args={[0.318, 0.208, 0.005]} radius={0.003} smoothness={3} position={[0, 0.104, 0]} castShadow>
+          <meshStandardMaterial color="#e4e7eb" metalness={0.88} roughness={0.18} />
+        </RoundedBox>
+        <mesh position={[0, 0.104, 0.0032]}>
+          <planeGeometry args={[0.294, 0.184]} />
+          <meshStandardMaterial color="#10141c" emissive="#1c3148" emissiveIntensity={0.55} roughness={0.2} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+function Phone() {
+  return (
+    <group position={[0.98, TABLE_TOP, 0.2]} rotation={[0, -0.7, 0]}>
+      <RoundedBox args={[0.055, 0.006, 0.048]} radius={0.002} smoothness={2} position={[0, 0.003, 0.012]} castShadow>
+        <meshStandardMaterial color="#cfd3d8" metalness={0.9} roughness={0.2} />
+      </RoundedBox>
+      <mesh position={[0, 0.028, -0.006]} rotation={[0.55, 0, 0]} castShadow>
+        <boxGeometry args={[0.036, 0.046, 0.004]} />
+        <meshStandardMaterial color="#e1e4e8" metalness={0.86} roughness={0.22} />
+      </mesh>
+      <group position={[0, 0.095, 0.002]} rotation={[-0.38, 0, 0]}>
+        <RoundedBox args={[0.074, 0.154, 0.008]} radius={0.01} smoothness={4} castShadow>
+          <meshStandardMaterial color="#16181c" metalness={0.7} roughness={0.24} />
+        </RoundedBox>
+        <mesh position={[0, 0.002, 0.0044]}>
+          <planeGeometry args={[0.064, 0.136]} />
+          <meshStandardMaterial color="#0c1016" emissive="#1d2c3e" emissiveIntensity={0.7} roughness={0.12} metalness={0.04} />
+        </mesh>
+      </group>
     </group>
   );
 }
@@ -468,7 +589,7 @@ function Cables() {
     });
     return root;
   }, [scene]);
-  return <primitive object={group} position={[-0.28, TABLE_TOP + 0.01, -0.18]} />;
+  return <primitive object={group} position={[-0.02, TABLE_TOP + 0.008, -0.28]} />;
 }
 
 function DeskBooks() {
@@ -516,33 +637,23 @@ function Desk({
         <HitBox
           id="monitor"
           position={[SCREEN.x, SCREEN.y, SCREEN.z]}
-          size={[0.5, 0.38, 0.08]}
+          size={[0.76, 0.46, 0.06]}
           onPick={() => onSelect({ kind: "os" })}
           onHover={onHover}
           drag={drag}
         />
       ) : null}
-      <Prop url={MODEL.laptop} position={[0.58, TABLE_TOP + 0.012, 0.02]} rotation={[0, -0.45, 0]} />
-      <Prop url={MODEL.notebook} position={[0.18, TABLE_TOP, 0.22]} rotation={[0, 0.25, 0]} />
-      <Prop url={MODEL.pen} position={[0.42, TABLE_TOP + 0.037, 0.24]} rotation={[0, 0.9, 0]} />
+      <Keyboard />
+      <Mouse />
+      <Laptop />
+      <Phone />
+      <Prop url={MODEL.notebook} position={[-0.72, TABLE_TOP, 0.16]} rotation={[0, 0.4, 0]} />
+      <Prop url={MODEL.pen} position={[-0.5, TABLE_TOP + 0.037, 0.2]} rotation={[0, 0.7, 0]} />
       <DeskBooks />
       <Cables />
-      <DeskLamp />
+      <LedLamp />
       <Dust reduce={reduce} />
-
-      <group position={[0.86, TABLE_TOP, 0.16]} rotation={[0, -0.4, 0]}>
-        <RoundedBox args={[0.07, 0.012, 0.14]} radius={0.003} position={[0, 0.01, 0]} castShadow>
-          <meshStandardMaterial color="#1a1816" roughness={0.45} metalness={0.2} />
-        </RoundedBox>
-        <RoundedBox args={[0.055, 0.018, 0.11]} radius={0.004} position={[0, 0.026, -0.01]} castShadow>
-          <meshStandardMaterial color="#221e1a" roughness={0.4} />
-        </RoundedBox>
-        <mesh position={[0.03, 0.03, 0.02]} rotation={[0.5, 0, 0.4]} castShadow>
-          <cylinderGeometry args={[0.006, 0.006, 0.07, 8]} />
-          <meshStandardMaterial color="#2a2622" roughness={0.35} />
-        </mesh>
-      </group>
-      <HitBox id="phone" position={[0.86, TABLE_TOP + 0.04, 0.16]} size={[0.18, 0.08, 0.22]} onPick={() => onSelect({ kind: "contact" })} onHover={onHover} drag={drag} />
+      <HitBox id="phone" position={[0.98, TABLE_TOP + 0.1, 0.2]} size={[0.16, 0.2, 0.12]} onPick={() => onSelect({ kind: "contact" })} onHover={onHover} drag={drag} />
 
       <group position={[-0.62, TABLE_TOP, 0.16]}>
         <mesh position={[0, 0.02, 0]}>

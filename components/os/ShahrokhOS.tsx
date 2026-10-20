@@ -33,7 +33,7 @@ const APPS: { kind: AppKind; glyph: string }[] = [
 export function ShahrokhOS({ lang, onLeave, embedded = false }: { lang: Lang; onLeave: () => void; embedded?: boolean }) {
   const t = ui[lang];
   const [wins, setWins] = useState<Win[]>([
-    { key: "projects", kind: "projects", x: embedded ? 148 : 78, y: embedded ? 16 : 36, z: 1 },
+    { key: "projects", kind: "projects", x: embedded ? 360 : 78, y: embedded ? 48 : 36, z: 1 },
   ]);
   const [top, setTop] = useState(1);
   const [clock, setClock] = useState("");

@@ -2,4 +2,6 @@ CC0 assets from Poly Haven (https://polyhaven.com), compressed for the web. No c
 
 Textures and HDRI: dark_wood, beige_wall_001, brown_leather, brown_planks_09, dirty_carpet, studio_small_09.
 
-Models: painted_wooden_table, GreenChair_01, Television_01, desk_lamp_arm_01, wooden_bookshelf_worn, book_encyclopedia_set_01, potted_plant_01, binder_notebook, stationery_supplies, classic_laptop, modular_electric_cables.
+Models: painted_wooden_table, GreenChair_01, wooden_bookshelf_worn, book_encyclopedia_set_01, potted_plant_01, binder_notebook, stationery_supplies, modular_electric_cables.
+
+The monitor, laptop, keyboard, mouse, LED lamp, and phone are modeled for this scene. Poly Haven does not publish a modern display, laptop, keyboard, mouse, or phone.
