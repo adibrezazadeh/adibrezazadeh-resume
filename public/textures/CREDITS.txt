@@ -1,7 +1,11 @@
 CC0 assets from Poly Haven (https://polyhaven.com), compressed for the web. No changes to the license.
 
-Textures and HDRI: dark_wood, beige_wall_001, brown_leather, brown_planks_09, dirty_carpet, studio_small_09.
+Textures: herringbone_parquet, white_stucco, curly_teddy_natural, white_oak_veneer (colour and roughness maps).
 
-Models: painted_wooden_table, GreenChair_01, wooden_bookshelf_worn, book_encyclopedia_set_01, potted_plant_01, binder_notebook, stationery_supplies, modular_electric_cables.
+Models: potted_plant_02, potted_plant_04, modern_ceiling_lamp_01, ceramic_vase_01, wall_clock, side_table_01.
 
-The monitor, laptop, keyboard, mouse, LED lamp, and phone are modeled for this scene. Poly Haven does not publish a modern display, laptop, keyboard, mouse, or phone.
+Modeled for this scene: the desk, monitor and light bar, keyboard, mouse, laptop, phone, office chair, headphones, mug, notebook, books, floating shelves, fluted sideboard, smart speaker, wood slat wall, neon sign, and photo frame. Poly Haven does not publish modern versions of these.
+
+The reflection environment is three.js's procedural RoomEnvironment; nothing is downloaded for it.
+
+Font: Emkan by FontIran (fontiran.com), used under the site owner's licence. It is not CC0 and may not be redistributed.

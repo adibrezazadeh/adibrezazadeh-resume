@@ -148,9 +148,11 @@ function ExperienceBody({ lang }: { lang: Lang }) {
 
   // Every place in the room has a URL: deep links work and Back steps out instead of leaving the site.
   const fromPop = useRef(false);
-  const pending = useRef<Selection | null>(null);
+  // Read once at first render: effects run twice in development, and by the second run the
+  // URL sync below would otherwise have cleared the hash before the deep link was used.
+  const [deepLink] = useState<Selection | null>(() => (typeof window === "undefined" ? null : fromHash(window.location.hash)));
+  const pending = useRef<Selection | null>(deepLink);
   useEffect(() => {
-    pending.current = fromHash(window.location.hash);
     const onPop = () => {
       fromPop.current = true;
       setSelection(fromHash(window.location.hash) ?? { kind: "room" });
@@ -163,6 +165,8 @@ function ExperienceBody({ lang }: { lang: Lang }) {
       fromPop.current = false;
       return;
     }
+    // A deep link waiting for the intro keeps its hash in the address bar.
+    if (pending.current) return;
     const hash = toHash(selection);
     if (window.location.hash === hash || (!hash && !window.location.hash)) return;
     const url = `${window.location.pathname}${window.location.search}${hash}`;

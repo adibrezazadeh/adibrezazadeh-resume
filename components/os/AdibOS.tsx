@@ -204,7 +204,7 @@ export function AdibOS({
   const shellClass = ["os-shell", embedded ? "os-embedded" : "", compact ? "os-compact" : ""].filter(Boolean).join(" ");
 
   return (
-    <div className={shellClass} role="dialog" aria-label="AdibOS" data-phase={phase}>
+    <div className={shellClass} role="dialog" aria-label="AdibOS" data-phase={phase} data-empty={active ? "false" : "true"}>
       {phase !== "on" ? (
         <div className="os-power" aria-hidden={phase === "off"}>
           {phase === "boot" ? (

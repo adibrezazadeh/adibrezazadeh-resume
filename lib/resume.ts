@@ -48,7 +48,7 @@ export function resumeText(lang: Lang): string {
     leadership[lang].join(" · "),
     "",
     t.educationTitle.toUpperCase(),
-    ...education.map((item) => `${item.degree[lang]}\n${item.school}\n${item.years}`),
+    ...education.map((item) => `${item.degree[lang]}\n${item.school}\n${lang === "en" ? item.years : `⁦${item.years}⁩`}`),
     "",
   );
 

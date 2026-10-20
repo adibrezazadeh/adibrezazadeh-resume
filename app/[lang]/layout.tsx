@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { person, ui } from "@/lib/profile";
-import { dirFor, isLang, LANGS, type Lang } from "@/lib/types";
+import { descriptions, languageAlternates, ogLocale, titles } from "@/lib/seo";
+import { dirFor, isLang, LANGS } from "@/lib/types";
 
 export const instant = false;
 
@@ -12,15 +13,23 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Promise<Metadata> {
   const { lang } = await params;
   if (!isLang(lang)) return {};
-  const titles: Record<Lang, string> = {
-    en: "Adib Rezazadeh — Senior Full-Stack Engineer",
-    fa: "ادیب رضازاده — مهندس ارشد فول‌استک",
-    ar: "أديب رضازاده — مهندس فل ستاك أول",
-  };
+  const description = descriptions[lang];
   return {
     title: titles[lang],
-    description: person.summary[lang],
-    alternates: { canonical: `/${lang}`, languages: { en: "/en", fa: "/fa", ar: "/ar" } },
+    description,
+    alternates: { canonical: `/${lang}`, languages: languageAlternates },
+    openGraph: {
+      type: "profile",
+      url: `/${lang}`,
+      siteName: person.names[lang],
+      title: titles[lang],
+      description,
+      locale: ogLocale[lang],
+      alternateLocale: LANGS.filter((code) => code !== lang).map((code) => ogLocale[code]),
+      firstName: lang === "en" ? "Adib" : undefined,
+      lastName: lang === "en" ? "Rezazadeh" : undefined,
+    },
+    twitter: { card: "summary_large_image", title: titles[lang], description },
   };
 }
 

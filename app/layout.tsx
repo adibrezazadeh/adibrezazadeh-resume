@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Mono, Outfit, Vazirmatn } from "next/font/google";
 import localFont from "next/font/local";
+import { descriptions, languageAlternates, titles } from "@/lib/seo";
+import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: "swap" });
@@ -20,11 +22,18 @@ const emkan = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
-  title: "Adib Rezazadeh — Senior Full-Stack Engineer",
-  description:
-    "Portfolio of Adib Rezazadeh, senior full-stack engineer and technical leader in Shiraz. React, Next.js, TypeScript, and Node.js.",
-  alternates: { languages: { en: "/en", fa: "/fa", ar: "/ar" } },
+  metadataBase: new URL(siteUrl),
+  title: titles.en,
+  description: descriptions.en,
+  applicationName: "Adib Rezazadeh",
+  authors: [{ name: "Adib Rezazadeh", url: siteUrl }],
+  creator: "Adib Rezazadeh",
+  alternates: { languages: languageAlternates },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.BING_SITE_VERIFICATION ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION } : undefined,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

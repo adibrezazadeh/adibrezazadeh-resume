@@ -55,7 +55,7 @@ export function ResumeView({ lang }: { lang: Lang }) {
             <br />
             {item.school}
             <br />
-            {item.years}
+            <bdi>{item.years}</bdi>
           </p>
         ))}
       </section>

@@ -101,7 +101,10 @@ export function SimpleSite({ lang, onEnterOffice }: { lang: Lang; onEnterOffice:
           <ol className="study">
             {education.map((item) => (
               <li key={item.years + item.degree.en}>
-                <span>{item.years}</span>
+                <span>
+                  {/* Isolated so "2017 — 2018" keeps its order inside RTL text. */}
+                  <bdi>{item.years}</bdi>
+                </span>
                 <div>
                   <strong>{item.degree[lang]}</strong>
                   <p>{item.school}</p>

@@ -57,6 +57,9 @@ button, input { font: inherit; color: inherit; }
   border: 0;
 }
 
+/* Server-rendered resume for crawlers; simple mode shows the same text, so drop the copy there. */
+body:has(.simple) .seo-copy { display: none; }
+
 .skip {
   position: absolute;
   inset-inline-start: 12px;
@@ -710,8 +713,8 @@ button, input { font: inherit; color: inherit; }
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px);
-  mix-blend-mode: screen;
+  /* No mix-blend-mode: blending a full-screen layer over the live WebGL canvas costs every frame. */
+  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 3px);
 }
 .bios[data-ready="true"] { cursor: pointer; }
 .bios[data-leaving="true"] { animation: bios-off 0.75s cubic-bezier(0.6, 0, 0.3, 1) forwards; pointer-events: none; }
@@ -1364,3 +1367,45 @@ button, input { font: inherit; color: inherit; }
     margin-bottom: 12px;
   }
 }
+/* ---------- Mobile: tap targets and layout ---------- */
+/* Each link sits under its label (start edge), with a full 44px tap area. */
+.contact-card a {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.frame-nav button { width: 44px; height: 44px; }
+@media (pointer: coarse) {
+  .bios-foot a, .bios-foot button { min-height: 44px; min-width: 44px; padding: 0 14px; }
+  .hotspot { width: 34px; height: 34px; }
+  .os-compact .os-win-buttons button { width: 44px; height: 40px; }
+}
+@media (max-width: 900px) {
+  /* Room for the assistant pill so it never covers the last lines. */
+  .colophon { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+}
+/* ---------- Compact AdibOS (narrow screens) ---------- */
+/* One line: mark, time, and the way out. The caption and Shiraz clock don't fit. */
+.os-compact .os-bar { flex-wrap: nowrap; gap: 6px; height: 52px; padding: 0 8px; }
+.os-compact .os-active,
+.os-compact .os-city { display: none; }
+.os-compact .os-clocks { margin-inline-start: auto; }
+.os-compact .os-leave { white-space: nowrap; min-height: 40px; }
+.os-compact .os-icons { scrollbar-width: none; }
+.os-compact .os-icons::-webkit-scrollbar { display: none; }
+.os-compact .os-window { margin: 10px; border-radius: 16px; }
+/* With nothing open, the icons become a launcher grid instead of a lone strip. */
+.os-compact[data-empty="true"] .os-icons {
+  order: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 8px;
+  width: 100%;
+  padding: 28px 16px;
+  border-top: 0;
+  overflow: visible;
+}
+.os-compact[data-empty="true"] .os-icons button { width: auto; min-height: 96px; }
+.os-compact[data-empty="true"] .os-icon-tile { width: 64px; height: 64px; border-radius: 18px; }
+.os-compact[data-empty="true"] .os-icons button > span:last-child { font-size: 0.85em; }

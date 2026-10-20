@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
+import { descriptions, languageAlternates, titles } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Adib Rezazadeh — choose a language",
-  description: "Full-stack engineer and technical lead. Shiraz.",
+  description: descriptions.en,
+  alternates: { canonical: "/", languages: languageAlternates },
+  openGraph: { type: "website", url: "/", siteName: "Adib Rezazadeh", title: titles.en, description: descriptions.en },
+  twitter: { card: "summary_large_image", title: titles.en, description: descriptions.en },
 };
 
 export default function HomePage() {
