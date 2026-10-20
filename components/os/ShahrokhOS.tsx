@@ -9,6 +9,7 @@ import { SkillsList } from "@/components/SkillsList";
 import { getProject, localeTag, projects, ui } from "@/lib/profile";
 import { runCommand, terminalPrompt } from "@/lib/terminal";
 import { dirFor, type Lang } from "@/lib/types";
+import { useMaxWidth } from "@/lib/use-media";
 
 type AppKind = "projects" | "project" | "resume" | "terminal" | "contact" | "skills" | "assistant";
 
@@ -32,6 +33,7 @@ const APPS: { kind: AppKind; glyph: string }[] = [
 
 export function ShahrokhOS({ lang, onLeave, embedded = false }: { lang: Lang; onLeave: () => void; embedded?: boolean }) {
   const t = ui[lang];
+  const compact = useMaxWidth(800) && !embedded;
   const [wins, setWins] = useState<Win[]>([
     { key: "projects", kind: "projects", x: embedded ? 360 : 78, y: embedded ? 48 : 36, z: 1 },
   ]);
@@ -78,7 +80,7 @@ export function ShahrokhOS({ lang, onLeave, embedded = false }: { lang: Lang; on
   };
 
   return (
-    <div className={embedded ? "os-shell os-embedded" : "os-shell"} role="dialog" aria-label="ShahrokhOS">
+    <div className={embedded ? "os-shell os-embedded" : compact ? "os-shell os-compact" : "os-shell"} role="dialog" aria-label="ShahrokhOS">
       <header className="os-bar">
         <strong>ShahrokhOS</strong>
         <span className="os-caption">{t.desktopCaption}</span>
@@ -96,7 +98,7 @@ export function ShahrokhOS({ lang, onLeave, embedded = false }: { lang: Lang; on
             </button>
           ))}
         </nav>
-        {wins.map((win) => (
+        {(compact ? wins.filter((win) => win.z === Math.max(...wins.map((item) => item.z))).slice(-1) : wins).map((win) => (
           <Window
             key={win.key}
             win={win}

@@ -20,10 +20,31 @@ type Props = {
   onOpenAssistant: () => void;
   onReady: () => void;
   onProgress: (value: number) => void;
+  screenInteractive?: boolean;
 };
 
 const HOME: Pose = { id: "room", pos: [0.12, 1.34, 2.22], look: [-0.02, 0.98, -0.45] };
 const INTRO: Pose = { id: "intro", pos: [0.95, 1.68, 3.05], look: [0.05, 0.92, -0.7] };
+
+function framing(aspect: number): { fov: number; yaw: number; home: Pose; intro: Pose } {
+  if (aspect < 0.72) {
+    return {
+      fov: 58,
+      yaw: 0.78,
+      home: { id: "room", pos: [0.02, 1.62, 3.42], look: [0.02, 0.98, -0.12] },
+      intro: { id: "intro", pos: [0.16, 1.86, 4.2], look: [0.02, 0.94, -0.18] },
+    };
+  }
+  if (aspect < 1.05) {
+    return {
+      fov: 44,
+      yaw: 0.55,
+      home: { id: "room", pos: [0.06, 1.48, 2.95], look: [-0.02, 0.98, -0.28] },
+      intro: { id: "intro", pos: [0.4, 1.74, 3.55], look: [0.02, 0.92, -0.4] },
+    };
+  }
+  return { fov: 32, yaw: 0.32, home: HOME, intro: INTRO };
+}
 
 const TABLE_TOP = 0.958;
 const MONITOR_POS: [number, number, number] = [-0.06, TABLE_TOP, -0.46];
@@ -79,8 +100,13 @@ function LoadBridge({ onProgress, onReady }: { onProgress: (value: number) => vo
 function CameraRig({ pose, drag, introOut }: { pose: Pose; drag: { current: boolean }; introOut: { current: number } }) {
   const camera = useThree((state) => state.camera);
   const gl = useThree((state) => state.gl);
-  const currentPos = useRef(new THREE.Vector3(...INTRO.pos));
-  const currentLook = useRef(new THREE.Vector3(...INTRO.look));
+  const size = useThree((state) => state.size);
+  const aspect = size.width / Math.max(1, size.height);
+  const shot = framing(aspect);
+  const shotRef = useRef(shot);
+  shotRef.current = shot;
+  const currentPos = useRef(new THREE.Vector3(...shot.intro.pos));
+  const currentLook = useRef(new THREE.Vector3(...shot.intro.look));
   const targetPos = useRef(new THREE.Vector3());
   const targetLook = useRef(new THREE.Vector3());
   const yaw = useRef(0);
@@ -88,11 +114,23 @@ function CameraRig({ pose, drag, introOut }: { pose: Pose; drag: { current: bool
   const pointer = useRef({ x: 0, y: 0 });
   const intro = useRef(0);
   const reduce = useRef(false);
+  const primed = useRef(false);
+  const yawLimit = useRef(shot.yaw);
+  const coarse = useRef(false);
+  yawLimit.current = shot.yaw;
+
+  useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    cam.fov = shot.fov;
+    cam.updateProjectionMatrix();
+  }, [camera, shot.fov]);
 
   useEffect(() => {
     reduce.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    coarse.current = window.matchMedia("(pointer: coarse)").matches;
     if (reduce.current) intro.current = 1;
     const el = gl.domElement;
+    el.style.touchAction = "none";
     let down = false;
     let lastX = 0;
     let lastY = 0;
@@ -101,6 +139,7 @@ function CameraRig({ pose, drag, introOut }: { pose: Pose; drag: { current: bool
       drag.current = false;
       lastX = event.clientX;
       lastY = event.clientY;
+      el.setPointerCapture?.(event.pointerId);
     };
     const onMove = (event: PointerEvent) => {
       pointer.current.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -108,41 +147,53 @@ function CameraRig({ pose, drag, introOut }: { pose: Pose; drag: { current: bool
       if (!down) return;
       const dx = event.clientX - lastX;
       const dy = event.clientY - lastY;
-      if (Math.abs(dx) + Math.abs(dy) > 4) drag.current = true;
+      if (Math.abs(dx) + Math.abs(dy) > 3) drag.current = true;
       lastX = event.clientX;
       lastY = event.clientY;
       if (pose.id !== "room") return;
-      yaw.current = THREE.MathUtils.clamp(yaw.current - dx * 0.0016, -0.28, 0.28);
-      pitch.current = THREE.MathUtils.clamp(pitch.current + dy * 0.0011, -0.12, 0.12);
+      const scale = coarse.current ? 0.0036 : 0.0016;
+      const limit = yawLimit.current;
+      yaw.current = THREE.MathUtils.clamp(yaw.current - dx * scale, -limit, limit);
+      pitch.current = THREE.MathUtils.clamp(pitch.current + dy * scale * 0.72, -0.2, 0.16);
     };
-    const onUp = () => {
+    const onUp = (event: PointerEvent) => {
       down = false;
+      if (el.hasPointerCapture?.(event.pointerId)) el.releasePointerCapture(event.pointerId);
       window.setTimeout(() => {
         drag.current = false;
       }, 40);
     };
     el.addEventListener("pointerdown", onDown);
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
     return () => {
       el.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onUp);
     };
   }, [gl, pose.id, drag]);
 
   useFrame((_, dt) => {
+    const frame = shotRef.current;
+    if (!primed.current) {
+      primed.current = true;
+      currentPos.current.set(...frame.intro.pos);
+      currentLook.current.set(...frame.intro.look);
+    }
     if (!reduce.current) intro.current = Math.min(1, intro.current + dt / 3.4);
     const introT = reduce.current ? 1 : easeInOut(intro.current);
     const idle = pose.id === "room" && intro.current >= 1;
     const px = idle ? pointer.current.x : 0;
     const py = idle ? pointer.current.y : 0;
-    const base = pose.id === "room" ? HOME : pose;
-    const from = pose.id === "room" ? INTRO : pose;
+    const base = pose.id === "room" ? frame.home : pose;
+    const from = pose.id === "room" ? frame.intro : pose;
+    const osPull = pose.id === "os" && size.width / Math.max(1, size.height) < 0.9 ? 0.62 : 0;
     targetPos.current.set(
       THREE.MathUtils.lerp(from.pos[0], base.pos[0], introT) + (idle ? px * 0.07 + yaw.current * 0.15 : 0),
       THREE.MathUtils.lerp(from.pos[1], base.pos[1], introT) + (idle ? -py * 0.04 : 0),
-      THREE.MathUtils.lerp(from.pos[2], base.pos[2], introT),
+      THREE.MathUtils.lerp(from.pos[2], base.pos[2], introT) + osPull,
     );
     targetLook.current.set(
       THREE.MathUtils.lerp(from.look[0], base.look[0], introT) + (idle ? px * 0.05 + yaw.current : 0),
@@ -209,8 +260,27 @@ type Maps = {
   wall: THREE.MeshStandardMaterial;
   planks: THREE.MeshStandardMaterial;
   carpet: THREE.MeshStandardMaterial;
-  frames: Record<string, THREE.Texture>;
+  frames: Record<string, THREE.MeshStandardMaterial>;
 };
+
+function mute(mat: THREE.MeshStandardMaterial, saturation: number, gain = 1) {
+  if (saturation >= 0.98 && gain === 1) return;
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uSat = { value: saturation };
+    shader.uniforms.uGain = { value: gain };
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", "#include <common>\nuniform float uSat;\nuniform float uGain;")
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+         {
+           float luma = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+           diffuseColor.rgb = mix(vec3(luma), diffuseColor.rgb, uSat) * uGain;
+         }`,
+      );
+  };
+  mat.customProgramCacheKey = () => "office-mute-v1";
+}
 
 function prepare(tex: THREE.Texture, color: boolean) {
   tex.colorSpace = color ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace;
@@ -271,11 +341,23 @@ function useMaps(): Maps {
       poster.colorSpace = THREE.SRGBColorSpace;
       poster.anisotropy = 8;
     });
+    const wall = material(tex.wallDiff, tex.wallNor, tex.wallRough, [2.2, 1.4], { color: "#b7b2a9", roughness: 0.94 });
+    const planks = material(tex.planksDiff, tex.planksNor, tex.planksRough, [3.2, 2.6], { color: "#8d7560", roughness: 0.88 });
+    const carpet = material(tex.carpetDiff, tex.carpetNor, tex.carpetRough, [1.6, 1.3], { color: "#8a847c", roughness: 0.96 });
+    mute(wall, 0.55, 0.96);
+    mute(planks, 0.72, 0.92);
+    mute(carpet, 0.12, 1.05);
     return {
-      wall: material(tex.wallDiff, tex.wallNor, tex.wallRough, [2.2, 1.4], { color: "#8a8178", roughness: 0.92 }),
-      planks: material(tex.planksDiff, tex.planksNor, tex.planksRough, [3.2, 2.6], { color: "#6a5040", roughness: 0.86 }),
-      carpet: material(tex.carpetDiff, tex.carpetNor, tex.carpetRough, [1.6, 1.3], { color: "#5c3a32", roughness: 0.95 }),
-      frames: Object.fromEntries(FRAME_IDS.map((id, index) => [id, posters[index]])),
+      wall,
+      planks,
+      carpet,
+      frames: Object.fromEntries(
+        FRAME_IDS.map((id, index) => {
+          const mat = new THREE.MeshStandardMaterial({ map: posters[index], roughness: 0.72, color: "#e4dfd6" });
+          mute(mat, 0.42, 0.94);
+          return [id, mat];
+        }),
+      ),
     };
     // Textures are stable once useTexture resolves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -293,7 +375,7 @@ const MODEL = {
   cables: "/models/modular_electric_cables/modular_electric_cables_1k.gltf",
 } as const;
 
-function prepareMesh(root: THREE.Object3D) {
+function prepareMesh(root: THREE.Object3D, saturation = 0.7, gain = 1) {
   root.traverse((obj) => {
     const mesh = obj as THREE.Mesh;
     if (!mesh.isMesh) return;
@@ -303,11 +385,10 @@ function prepareMesh(root: THREE.Object3D) {
     const next = list.map((source) => {
       const mat = source.clone();
       if (mat instanceof THREE.MeshStandardMaterial) {
-        mat.envMapIntensity = 0.55;
-        if (/light/i.test(mat.name)) {
-          mat.emissiveIntensity = 8;
-          mat.toneMapped = false;
-        }
+        mat.envMapIntensity = 0.32;
+        mat.emissiveIntensity = Math.min(mat.emissiveIntensity, 0.15);
+        mat.toneMapped = true;
+        mute(mat, saturation, gain);
       }
       return mat;
     });
@@ -315,17 +396,31 @@ function prepareMesh(root: THREE.Object3D) {
   });
 }
 
-function useProp(url: string) {
+function useProp(url: string, saturation = 0.7, gain = 1) {
   const { scene } = useGLTF(url);
   return useMemo(() => {
     const clone = scene.clone(true);
-    prepareMesh(clone);
+    prepareMesh(clone, saturation, gain);
     return clone;
-  }, [scene]);
+  }, [scene, saturation, gain]);
 }
 
-function Prop({ url, position, rotation, scale }: { url: string; position?: [number, number, number]; rotation?: [number, number, number]; scale?: number }) {
-  const object = useProp(url);
+function Prop({
+  url,
+  position,
+  rotation,
+  scale,
+  saturation,
+  gain,
+}: {
+  url: string;
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: number;
+  saturation?: number;
+  gain?: number;
+}) {
+  const object = useProp(url, saturation, gain);
   return <primitive object={object} position={position} rotation={rotation} scale={scale} />;
 }
 
@@ -336,17 +431,17 @@ function cityLights() {
   const ctx = canvas.getContext("2d");
   if (!ctx) return new THREE.CanvasTexture(canvas);
   const sky = ctx.createLinearGradient(0, 0, 0, 480);
-  sky.addColorStop(0, "#24364c");
-  sky.addColorStop(0.42, "#101820");
-  sky.addColorStop(1, "#07090d");
+  sky.addColorStop(0, "#2c2a27");
+  sky.addColorStop(0.42, "#161513");
+  sky.addColorStop(1, "#0c0b0a");
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, 640, 480);
-  const tones = ["#f3d7a4", "#d5e6f6", "#9eb6d4", "#ffc48a", "#e7eef6", "#7f93ab"];
-  for (let i = 0; i < 90; i += 1) {
+  const tones = ["#e4d7c4", "#cfc3b2", "#b7aa9a", "#ddd2c2"];
+  for (let i = 0; i < 42; i += 1) {
     const x = Math.random() * 640;
-    const y = 150 + Math.random() * 300;
-    const r = 2 + Math.random() * 16;
-    ctx.globalAlpha = 0.18 + Math.random() * 0.55;
+    const y = 170 + Math.random() * 260;
+    const r = 1.5 + Math.random() * 8;
+    ctx.globalAlpha = 0.1 + Math.random() * 0.22;
     ctx.fillStyle = tones[i % tones.length];
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -390,7 +485,7 @@ function Dust({ reduce }: { reduce: boolean }) {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial color="#ffd7a8" size={0.007} transparent opacity={0.45} depthWrite={false} sizeAttenuation />
+      <pointsMaterial color="#efe8dc" size={0.006} transparent opacity={0.28} depthWrite={false} sizeAttenuation />
     </points>
   );
 }
@@ -416,16 +511,16 @@ function LedLamp() {
         </RoundedBox>
         <mesh position={[0, -0.007, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <planeGeometry args={[0.16, 0.03]} />
-          <meshStandardMaterial color="#fff4e6" emissive="#ffe0bf" emissiveIntensity={3.2} toneMapped={false} />
+          <meshStandardMaterial color="#fff6ee" emissive="#f3e6d4" emissiveIntensity={1.15} />
         </mesh>
         <object3D ref={target} position={[0, -0.7, 0.05]} />
         <spotLight
           ref={light}
           position={[0, -0.03, 0]}
           angle={0.72}
-          penumbra={0.65}
-          intensity={95}
-          color="#fff3e4"
+          penumbra={0.72}
+          intensity={52}
+          color="#fff6ec"
           distance={3.4}
           decay={2}
           castShadow
@@ -433,7 +528,7 @@ function LedLamp() {
           shadow-bias={-0.00045}
           shadow-normalBias={0.035}
         />
-        <pointLight position={[0, -0.04, 0]} color="#ffe7cc" intensity={6} distance={1.4} decay={2} />
+        <pointLight position={[0, -0.04, 0]} color="#f7f1e6" intensity={2.2} distance={1.6} decay={2} />
       </group>
     </group>
   );
@@ -455,7 +550,7 @@ function Monitor({ interactive, lang, onLeave }: { interactive: boolean; lang: L
         </RoundedBox>
         <mesh position={[0, 0, 0.006]}>
           <planeGeometry args={[0.72, 0.408]} />
-          <meshStandardMaterial color="#9eb6d4" emissive="#b9cce4" emissiveIntensity={0.45} toneMapped={false} />
+          <meshStandardMaterial color="#d9d4cc" emissive="#cfc8bc" emissiveIntensity={0.12} />
         </mesh>
         <mesh position={[0, 0, 0.008]}>
           <planeGeometry args={[0.708, 0.398]} />
@@ -496,7 +591,7 @@ function Keyboard() {
       </RoundedBox>
       <mesh position={[0, 0.0122, 0.004]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[0.36, 0.11]} />
-        <meshStandardMaterial color="#3a2e28" emissive="#ffb37a" emissiveIntensity={0.35} />
+        <meshStandardMaterial color="#2a2826" roughness={0.6} />
       </mesh>
       {caps.map((cap) => (
         <RoundedBox key={`${cap.x}-${cap.z}`} args={[cap.w, 0.007, 0.016]} radius={0.002} smoothness={2} position={[cap.x, 0.016, cap.z]} castShadow>
@@ -538,7 +633,7 @@ function Laptop() {
         </RoundedBox>
         <mesh position={[0, 0.104, 0.0032]}>
           <planeGeometry args={[0.294, 0.184]} />
-          <meshStandardMaterial color="#10141c" emissive="#1c3148" emissiveIntensity={0.55} roughness={0.2} />
+          <meshStandardMaterial color="#1c1b19" emissive="#2e2c29" emissiveIntensity={0.18} roughness={0.4} />
         </mesh>
       </group>
     </group>
@@ -561,7 +656,7 @@ function Phone() {
         </RoundedBox>
         <mesh position={[0, 0.002, 0.0044]}>
           <planeGeometry args={[0.064, 0.136]} />
-          <meshStandardMaterial color="#0c1016" emissive="#1d2c3e" emissiveIntensity={0.7} roughness={0.12} metalness={0.04} />
+          <meshStandardMaterial color="#161514" emissive="#2a2826" emissiveIntensity={0.16} roughness={0.35} metalness={0.04} />
         </mesh>
       </group>
     </group>
@@ -584,7 +679,7 @@ function Cables() {
       const clone = src.clone(true);
       clone.position.set(x, 0, z);
       clone.rotation.set(-Math.PI / 2, 0, yaw);
-      prepareMesh(clone);
+      prepareMesh(clone, 0.35, 0.9);
       root.add(clone);
     });
     return root;
@@ -602,7 +697,7 @@ function DeskBooks() {
       const clone = src.clone(true);
       clone.position.set(index * 0.05, 0, 0);
       clone.rotation.set(0, (index - 1) * 0.08, 0);
-      prepareMesh(clone);
+      prepareMesh(clone, 0.16, 0.78);
       root.add(clone);
     });
     return root;
@@ -658,11 +753,11 @@ function Desk({
       <group position={[-0.62, TABLE_TOP, 0.16]}>
         <mesh position={[0, 0.02, 0]}>
           <cylinderGeometry args={[0.028, 0.032, 0.012, 16]} />
-          <meshStandardMaterial color="#8d7348" metalness={0.65} roughness={0.32} />
+          <meshStandardMaterial color="#6e675e" metalness={0.55} roughness={0.38} />
         </mesh>
         <mesh position={[0, 0.055, 0]}>
           <sphereGeometry args={[0.04, 24, 18]} />
-          <meshStandardMaterial color="#e7c27a" emissive="#ffb703" emissiveIntensity={0.45} roughness={0.18} metalness={0.04} />
+          <meshStandardMaterial color="#b7a48c" metalness={0.72} roughness={0.36} />
         </mesh>
       </group>
       <HitBox id="orb" position={[-0.62, TABLE_TOP + 0.06, 0.16]} size={[0.12, 0.12, 0.12]} onPick={onOpenAssistant} onHover={onHover} drag={drag} />
@@ -674,9 +769,9 @@ function Shelf({ onSelect, onHover, drag }: { onSelect: Props["onSelect"]; onHov
   return (
     <group position={[1.12, 0, -1.88]}>
       <Prop url={MODEL.shelf} />
-      <Prop url={MODEL.books} position={[-0.52, 0.36, -0.14]} />
-      <Prop url={MODEL.books} position={[-0.36, 0.64, -0.14]} />
-      <Prop url={MODEL.books} position={[-0.5, 0.93, -0.14]} />
+      <Prop url={MODEL.books} position={[-0.52, 0.36, -0.14]} saturation={0.16} gain={0.78} />
+      <Prop url={MODEL.books} position={[-0.36, 0.64, -0.14]} saturation={0.16} gain={0.78} />
+      <Prop url={MODEL.books} position={[-0.5, 0.93, -0.14]} saturation={0.16} gain={0.78} />
       <HitBox id="shelf" position={[0, 1.05, 0.1]} size={[1.3, 2.05, 0.55]} onPick={() => onSelect({ kind: "skills" })} onHover={onHover} drag={drag} />
     </group>
   );
@@ -695,11 +790,10 @@ function WallFrames({ mats, onSelect, onHover, drag }: {
         return (
           <group key={project.id} position={[x, y, z]} rotation={[0, Math.PI / 2, 0]}>
             <RoundedBox args={[0.4, 0.52, 0.03]} radius={0.008} smoothness={2} castShadow>
-              <meshStandardMaterial color="#3a2a1c" roughness={0.48} metalness={0.08} />
+              <meshStandardMaterial color="#3c3834" roughness={0.55} metalness={0.12} />
             </RoundedBox>
-            <mesh position={[0, 0, 0.018]}>
+            <mesh position={[0, 0, 0.018]} material={mats.frames[project.id]}>
               <planeGeometry args={[0.34, 0.44]} />
-              <meshStandardMaterial map={mats.frames[project.id]} roughness={0.55} />
             </mesh>
           </group>
         );
@@ -725,20 +819,20 @@ function WallFrames({ mats, onSelect, onHover, drag }: {
 function RoomShell({ mats, city }: { mats: Maps; city: THREE.Texture }) {
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow material={mats.planks}>
-        <planeGeometry args={[5.2, 4.4]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0.35]} receiveShadow material={mats.planks}>
+        <planeGeometry args={[8, 8]} />
       </mesh>
-      <mesh position={[0, 2.7, 0]} rotation={[Math.PI / 2, 0, 0]} material={mats.wall}>
-        <planeGeometry args={[5.2, 4.4]} />
+      <mesh position={[0, 2.8, 0.35]} rotation={[Math.PI / 2, 0, 0]} material={mats.wall}>
+        <planeGeometry args={[8, 8]} />
       </mesh>
-      <mesh position={[0, 1.35, -2.2]} receiveShadow material={mats.wall}>
-        <planeGeometry args={[5.2, 2.7]} />
+      <mesh position={[0, 1.4, -2.2]} receiveShadow material={mats.wall}>
+        <planeGeometry args={[8, 2.8]} />
       </mesh>
-      <mesh position={[-2.6, 1.35, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow material={mats.wall}>
-        <planeGeometry args={[4.4, 2.7]} />
+      <mesh position={[-2.6, 1.4, 0.55]} rotation={[0, Math.PI / 2, 0]} receiveShadow material={mats.wall}>
+        <planeGeometry args={[8, 2.8]} />
       </mesh>
-      <mesh position={[2.6, 1.35, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow material={mats.wall}>
-        <planeGeometry args={[4.4, 2.7]} />
+      <mesh position={[2.6, 1.4, 0.55]} rotation={[0, -Math.PI / 2, 0]} receiveShadow material={mats.wall}>
+        <planeGeometry args={[8, 2.8]} />
       </mesh>
       <mesh position={[-1.35, 1.62, -2.175]}>
         <planeGeometry args={[1.58, 1.28]} />
@@ -746,7 +840,7 @@ function RoomShell({ mats, city }: { mats: Maps; city: THREE.Texture }) {
       </mesh>
       <mesh position={[-1.35, 1.62, -2.16]}>
         <planeGeometry args={[1.42, 1.12]} />
-        <meshStandardMaterial map={city} emissiveMap={city} emissive="#c5d4e6" emissiveIntensity={0.85} roughness={0.4} toneMapped={false} />
+        <meshStandardMaterial map={city} emissiveMap={city} emissive="#d9cfc2" emissiveIntensity={0.28} roughness={0.55} />
       </mesh>
       {[-1.9, -1.35, -0.8].map((x) => (
         <mesh key={x} position={[x, 1.62, -2.145]} castShadow>
@@ -777,19 +871,20 @@ function OfficeScene({
   onHover,
   onOpenAssistant,
   drag,
+  screenInteractive = true,
 }: Omit<Props, "onReady" | "onProgress"> & { drag: { current: boolean } }) {
   const mats = useMaps();
   const city = useMemo(() => cityLights(), []);
   const reduce = useMemo(() => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches, []);
-  const interactive = selection.kind === "os";
+  const interactive = selection.kind === "os" && screenInteractive;
 
   return (
     <>
-      <Environment files="/textures/studio.hdr" environmentIntensity={0.18} />
-      <hemisphereLight args={["#c5d4e4", "#3a2418", 0.18]} />
-      <directionalLight position={[-2.6, 2.4, -1.2]} intensity={0.55} color="#9eb4cc" />
-      <pointLight position={[-1.2, 1.5, -1.7]} color="#b7cbe0" intensity={3.2} distance={4.5} decay={2} />
-      <pointLight position={[0.2, 0.55, -1.15]} color="#ffb07a" intensity={2.4} distance={3.2} decay={2} />
+      <Environment files="/textures/studio.hdr" environmentIntensity={0.22} />
+      <hemisphereLight args={["#e8e3da", "#5c564e", 0.72]} />
+      <directionalLight position={[-2.3, 3.05, 0.35]} intensity={1.65} color="#f7f3ec" />
+      <pointLight position={[-1.25, 1.65, -1.45]} color="#f3eadc" intensity={2.8} distance={5.6} decay={2} />
+      <pointLight position={[0.55, 1.15, 0.85]} color="#e4ddd2" intensity={0.9} distance={4} decay={2} />
       <RoomShell mats={mats} city={city} />
       <Desk
         interactive={interactive}
@@ -801,8 +896,8 @@ function OfficeScene({
         drag={drag}
         reduce={reduce}
       />
-      <Prop url={MODEL.chair} position={[0.02, 0, 0.78]} rotation={[0, Math.PI, 0]} />
-      <Prop url={MODEL.plant} position={[-1.72, 0, -1.25]} rotation={[0, 0.6, 0]} />
+      <Prop url={MODEL.chair} position={[0.02, 0, 0.78]} rotation={[0, Math.PI, 0]} saturation={0.04} gain={0.62} />
+      <Prop url={MODEL.plant} position={[-1.72, 0, -1.25]} rotation={[0, 0.6, 0]} saturation={0.42} gain={0.86} />
       <Shelf onSelect={onSelect} onHover={onHover} drag={drag} />
       <WallFrames mats={mats} onSelect={onSelect} onHover={onHover} drag={drag} />
     </>
@@ -821,14 +916,14 @@ function Grade({ intro, poseId }: { intro: { current: number }; poseId: string }
     <EffectComposer multisampling={0} enableNormalPass={false}>
       <DepthOfField ref={dof} focusDistance={2.15} focalLength={0.9} bokehScale={1.4} />
       <SMAA />
-      <Bloom intensity={0.32} luminanceThreshold={0.82} luminanceSmoothing={0.22} mipmapBlur />
-      <Vignette eskil={false} offset={0.18} darkness={0.62} />
+      <Bloom intensity={0.08} luminanceThreshold={0.94} luminanceSmoothing={0.2} mipmapBlur />
+      <Vignette eskil={false} offset={0.32} darkness={0.26} />
       <Noise opacity={0.018} />
     </EffectComposer>
   );
 }
 
-export default function OfficeCanvas({ lang, selection, onSelect, onHover, onOpenAssistant, onReady, onProgress }: Props) {
+export default function OfficeCanvas({ lang, selection, onSelect, onHover, onOpenAssistant, onReady, onProgress, screenInteractive = true }: Props) {
   const drag = useRef({ current: false });
   const intro = useRef({ current: 0 });
   const pose = poseFor(selection);
@@ -838,14 +933,19 @@ export default function OfficeCanvas({ lang, selection, onSelect, onHover, onOpe
       className="office-canvas"
       dpr={[1, 1.5]}
       shadows
-      camera={{ position: INTRO.pos, fov: 32, near: 0.08, far: 24 }}
+      camera={{ position: INTRO.pos, fov: 36, near: 0.08, far: 28 }}
       gl={{ antialias: false, alpha: false, powerPreference: "high-performance", stencil: false }}
-      onCreated={({ gl, scene }) => {
-        gl.setClearColor("#070605");
+      onCreated={({ gl, scene, camera, size }) => {
+        gl.setClearColor("#121110");
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.02;
+        gl.toneMappingExposure = 1.08;
         gl.shadowMap.enabled = true;
-        scene.environmentIntensity = 0.18;
+        scene.environmentIntensity = 0.22;
+        const shot = framing(size.width / Math.max(1, size.height));
+        const view = camera as THREE.PerspectiveCamera;
+        view.position.set(...shot.intro.pos);
+        view.fov = shot.fov;
+        view.updateProjectionMatrix();
         gl.domElement.style.cursor = "grab";
       }}
     >
@@ -859,6 +959,7 @@ export default function OfficeCanvas({ lang, selection, onSelect, onHover, onOpe
           onHover={onHover}
           onOpenAssistant={onOpenAssistant}
           drag={drag.current}
+          screenInteractive={screenInteractive}
         />
       </Suspense>
       <Grade intro={intro.current} poseId={pose.id} />

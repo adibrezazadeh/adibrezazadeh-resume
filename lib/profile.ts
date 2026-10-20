@@ -137,7 +137,7 @@ export const projects: Project[] = [
     period: { en: "Jan 2025 — Now", fa: "ژانویه ۲۰۲۵ — اکنون", ar: "يناير ٢٠٢٥ — الآن" },
     place: shiraz,
     role: { en: "Chief Technology Officer", fa: "مدیر فناوری", ar: "المدير التقني" },
-    mat: "#1e6d68",
+    mat: "#6a655e",
     summary: {
       en: "CTO of Hubly.ir, an Iranian platform for building an online hub and selling courses, files, communities, and other digital products.",
       fa: "مدیر فناوری Hubly.ir، پلتفرم ایرانی برای ساخت هاب آنلاین و فروش دوره، فایل، انجمن و محصولات دیجیتال.",
@@ -166,7 +166,7 @@ export const projects: Project[] = [
     period: { en: "Feb 2026 — Now", fa: "فوریه ۲۰۲۶ — اکنون", ar: "فبراير ٢٠٢٦ — الآن" },
     place: vancouver,
     role: { en: "Head of Engineering", fa: "مدیر مهندسی", ar: "رئيس الهندسة" },
-    mat: "#243056",
+    mat: "#4e4a45",
     summary: {
       en: "Head of Engineering at Glonova, which is building an independent verification standard for medical aesthetics clinics in British Columbia.",
       fa: "مدیر مهندسی Glonova که در حال ساخت یک استاندارد مستقل برای راستی‌آزمایی کلینیک‌های زیبایی پزشکی در بریتیش کلمبیا است.",
@@ -194,7 +194,7 @@ export const projects: Project[] = [
     period: { en: "Jun 2026 — Now", fa: "ژوئن ۲۰۲۶ — اکنون", ar: "يونيو ٢٠٢٦ — الآن" },
     place: shiraz,
     role: { en: "Full-Stack Engineer", fa: "مهندس فول‌استک", ar: "مهندس فل ستاك" },
-    mat: "#c4622d",
+    mat: "#7d756b",
     summary: {
       en: "Full-stack engineer at Sazeh Peyvand in Shiraz, shipping features from the API through to the interface.",
       fa: "مهندس فول‌استک در سازه‌پیوند در شیراز؛ ویژگی‌ها را از API تا رابط کاربری تحویل می‌دهد.",
@@ -226,7 +226,7 @@ export const projects: Project[] = [
       fa: "توسعه‌دهنده ارشد فرانت‌اند",
       ar: "مطور واجهات أول",
     },
-    mat: "#8d2f2f",
+    mat: "#5a554f",
     summary: {
       en: "Senior front-end developer. High-performance interfaces with the Next.js App Router, Server Components, TypeScript, and Tailwind.",
       fa: "توسعه‌دهنده ارشد فرانت‌اند. رابط‌های پرکارایی با Next.js App Router، Server Components، TypeScript و Tailwind.",
@@ -258,7 +258,7 @@ export const projects: Project[] = [
       fa: "توسعه‌دهنده ارشد فرانت‌اند",
       ar: "مطور واجهات أول",
     },
-    mat: "#3f6b3a",
+    mat: "#3a3835",
     summary: {
       en: "Senior front-end developer on scalable React and Next.js apps, and de-facto product manager across multiple products.",
       fa: "توسعه‌دهنده ارشد فرانت‌اند روی اپ‌های مقیاس‌پذیر React و Next.js، و در عمل مدیر محصول چند محصول.",
@@ -286,7 +286,7 @@ export const projects: Project[] = [
     period: { en: "Jan 2020 — Feb 2024", fa: "ژانویه ۲۰۲۰ — فوریه ۲۰۲۴", ar: "يناير ٢٠٢٠ — فبراير ٢٠٢٤" },
     place: shiraz,
     role: { en: "Full-Stack Engineer", fa: "مهندس فول‌استک", ar: "مهندس فل ستاك" },
-    mat: "#e6a21a",
+    mat: "#8a8178",
     summary: {
       en: "Full-stack engineer for four years, owning web and mobile products from the interface through Node.js services and SQL/NoSQL data.",
       fa: "چهار سال مهندس فول‌استک؛ مالک محصول وب و موبایل از رابط کاربری تا سرویس‌های Node.js و داده‌های SQL و NoSQL.",
@@ -315,7 +315,7 @@ export const projects: Project[] = [
     period: { en: "2026", fa: "۲۰۲۶", ar: "٢٠٢٦" },
     place: null,
     role: { en: "Builder", fa: "سازنده", ar: "البنّاء" },
-    mat: "#6b3a5d",
+    mat: "#6e675f",
     summary: {
       en: "His own product: a private journal. Speak or type moments through the day and Stogite weaves them into a continuing narrative, with comic panels added to that same date.",
       fa: "محصول خودش: یک ژورنال خصوصی. لحظه‌های روز را بگویید یا بنویسید؛ Stogite آن‌ها را به یک روایت پیوسته می‌بافد و پنل کمیک را به همان تاریخ اضافه می‌کند.",
@@ -344,7 +344,7 @@ export const projects: Project[] = [
     period: null,
     place: null,
     role: { en: "Web", fa: "وب", ar: "ويب" },
-    mat: "#8a6232",
+    mat: "#857864",
     summary: {
       en: "The public site of Meraas Gallery: handmade Khatam, saffron cases, and other premium handicrafts, with worldwide shipping and delivery in Qatar.",
       fa: "سایت عمومی Meraas Gallery: خاتم دست‌ساز، جعبه‌های زعفران و صنایع‌دستی ممتاز دیگر، با ارسال جهانی و تحویل در قطر.",
@@ -372,7 +372,7 @@ export const projects: Project[] = [
     period: null,
     place: null,
     role: { en: "Project", fa: "پروژه", ar: "مشروع" },
-    mat: "#c6a15b",
+    mat: "#9a9186",
     summary: {
       en: "Named with the other selected work in this office. The resume does not include a public URL, dates, or a separate title, so this frame does not add any.",
       fa: "کنار بقیه کارهای انتخابی این دفتر نام برده شده. رزومه لینک عمومی، تاریخ، یا عنوان جدا ندارد و این قاب چیزی به آن اضافه نمی‌کند.",
@@ -391,7 +391,7 @@ export const projects: Project[] = [
     period: null,
     place: null,
     role: { en: "Practice", fa: "کار عملی", ar: "ممارسة" },
-    mat: "#355c7d",
+    mat: "#514e49",
     summary: {
       en: "Hands-on work with AI agents and bots: specialized roles for research, drafting, and planning, and terminal coding agents where a person stays in the loop. The assistant on this desk answers from local notes. An API key can be configured later; none is required.",
       fa: "کار عملی با عامل‌ها و ربات‌های هوش مصنوعی: نقش‌های تخصصی برای پژوهش، پیش‌نویس و برنامه‌ریزی، و عامل‌های کدنویسی در ترمینال که انسان در حلقه می‌ماند. دستیار همین میز از یادداشت‌های محلی جواب می‌دهد. کلید API را بعداً می‌شود گذاشت؛ لازم نیست.",
@@ -441,6 +441,7 @@ const en = {
   dockPhone: "Contact",
   dockAssistant: "Assistant",
   hintRoom: "Click the monitor, a frame, the shelf, or the phone. Esc steps back.",
+  lookHint: "Drag to look around.",
   skillsTitle: "Skills",
   contactTitle: "Contact",
   projectsTitle: "Projects",
@@ -507,6 +508,7 @@ export const ui: Record<Lang, typeof en> = {
     dockPhone: "تماس",
     dockAssistant: "دستیار",
     hintRoom: "مانیتور، یک قاب، قفسه یا تلفن را بزنید. Esc برمی‌گرداند.",
+    lookHint: "برای نگاه کردن بکشید.",
     skillsTitle: "مهارت‌ها",
     contactTitle: "تماس",
     projectsTitle: "پروژه‌ها",
@@ -566,6 +568,7 @@ export const ui: Record<Lang, typeof en> = {
     dockPhone: "التواصل",
     dockAssistant: "المساعد",
     hintRoom: "انقر الشاشة أو إطارًا أو الرف أو الهاتف. Esc يرجعك.",
+    lookHint: "اسحب للنظر حولك.",
     skillsTitle: "المهارات",
     contactTitle: "التواصل",
     projectsTitle: "المشاريع",

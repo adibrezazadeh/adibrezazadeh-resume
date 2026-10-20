@@ -28,6 +28,6 @@ export function SkillsList({ lang }: { lang: Lang }) {
 }
 
 function spineColor(index: number): string {
-  const colors = ["#8d2f2f", "#1e6d68", "#243056", "#c4622d", "#6b3a5d", "#355c7d", "#3f6b3a", "#8a6232"];
+  const colors = ["#3a3835", "#514e49", "#5a554f", "#6a655e", "#6e675f", "#7d756b", "#857864", "#8a8178"];
   return colors[index % colors.length];
 }

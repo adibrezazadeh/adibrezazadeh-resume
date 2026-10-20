@@ -6,10 +6,12 @@ import { AssistantDock, AssistantProvider, useAssistant } from "@/components/ass
 import { Boot } from "@/components/Boot";
 import { ContactCard } from "@/components/ContactCard";
 import { ProjectArticle } from "@/components/ProjectArticle";
+import { ShahrokhOS } from "@/components/os/ShahrokhOS";
 import { SimpleSite } from "@/components/SimpleSite";
 import { SkillsList } from "@/components/SkillsList";
 import { getProject, ui } from "@/lib/profile";
 import { dirFor, type Lang, type Selection } from "@/lib/types";
+import { useMaxWidth } from "@/lib/use-media";
 
 const OfficeCanvas = dynamic(() => import("@/components/scene/OfficeCanvas"), {
   ssr: false,
@@ -44,6 +46,7 @@ export function Experience({ lang }: { lang: Lang }) {
 function ExperienceBody({ lang }: { lang: Lang }) {
   const t = ui[lang];
   const assistant = useAssistant();
+  const narrow = useMaxWidth(800);
   const [view, setView] = useState<"room" | "simple" | null>(null);
   const [ready, setReady] = useState(false);
   const [selection, setSelection] = useState<Selection>({ kind: "room" });
@@ -56,6 +59,11 @@ function ExperienceBody({ lang }: { lang: Lang }) {
     const query = new URLSearchParams(window.location.search).get("view");
     if (query === "room" || query === "simple") {
       setView(query);
+      return;
+    }
+    const narrow = window.matchMedia("(max-width: 840px)").matches;
+    if (narrow) {
+      setView("simple");
       return;
     }
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -127,6 +135,7 @@ function ExperienceBody({ lang }: { lang: Lang }) {
         onOpenAssistant={() => assistant.setOpen(true)}
         onReady={onReady}
         onProgress={onProgress}
+        screenInteractive={!narrow}
       />
       {!ready ? <Boot line={t.loadingOffice} progress={progress} /> : null}
       {ready && selection.kind !== "os" ? (
@@ -136,6 +145,7 @@ function ExperienceBody({ lang }: { lang: Lang }) {
               <p className="wordmark">
                 <span>Shahrokh</span>
                 <small>{t.hintRoom}</small>
+                <small className="look-hint">{t.lookHint}</small>
               </p>
             </div>
             <div className="chrome-actions">
@@ -198,6 +208,11 @@ function ExperienceBody({ lang }: { lang: Lang }) {
           <h2 className="display">{t.contactTitle}</h2>
           <ContactCard lang={lang} />
         </aside>
+      ) : null}
+      {narrow && selection.kind === "os" ? (
+        <div className="os-fallback">
+          <ShahrokhOS lang={lang} onLeave={() => setSelection({ kind: "room" })} />
+        </div>
       ) : null}
       <AssistantDock hidden={selection.kind === "os"} />
     </div>
