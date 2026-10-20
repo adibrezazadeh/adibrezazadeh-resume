@@ -6,7 +6,7 @@ export function ResumeView({ lang }: { lang: Lang }) {
   return (
     <article className="resume-doc">
       <header>
-        <p className="kicker">{person.nickname}</p>
+        <p className="kicker">{person.roleLine[lang]}</p>
         <h3 className="display">{person.names[lang]}</h3>
         <p>{person.roleLine[lang]}</p>
         <p className="meta">

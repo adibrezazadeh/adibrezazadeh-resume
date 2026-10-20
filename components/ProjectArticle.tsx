@@ -26,6 +26,7 @@ export function ProjectArticle({ project, lang }: { project: Project; lang: Lang
       {project.href ? (
         <a className="btn" href={project.href} target="_blank" rel="noreferrer">
           {t.openLink}
+          <span aria-hidden="true">↗</span>
         </a>
       ) : (
         <p className="quiet">{t.noPublicLink}</p>

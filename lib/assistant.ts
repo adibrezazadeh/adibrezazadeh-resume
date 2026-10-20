@@ -14,13 +14,14 @@ type Intent = {
 };
 
 function who(lang: Lang): string {
-  return `${person.names[lang]} (${person.nickname}) — ${person.roleLine[lang]}. ${person.location[lang]}. ${person.relocation[lang]}. ${person.summary[lang]}`;
+  return `${person.names[lang]} — ${person.roleLine[lang]}. ${person.location[lang]}. ${person.relocation[lang]}. ${person.summary[lang]}`;
 }
 
 function contact(lang: Lang): string {
   return [
     `${ui[lang].email}: ${person.email}`,
-    `${ui[lang].phone}: ${person.phone}`,
+    // Isolate marks keep "+98 917 736 7441" in order inside RTL text.
+    `${ui[lang].phone}: ⁦${person.phone}⁩`,
     `${ui[lang].linkedin}: ${person.linkedin}`,
     `${ui[lang].github}: ${person.github}`,
     `${ui[lang].locationLabel}: ${person.location[lang]}. ${person.relocation[lang]}.`,
@@ -62,11 +63,8 @@ const intents: Intent[] = [
       "whoami",
       "about",
       "bio",
-      "shahrokh",
       "adib",
       "rezazadeh",
-      "شاهرخ",
-      "شاه رخ",
       "ادیب",
       "اديب",
       "أديب",
@@ -213,7 +211,7 @@ export function answerQuestion(question: string, lang: Lang): LocalAnswer {
 
 export function systemPrompt(lang: Lang): string {
   return [
-    "You answer questions about Adib Rezazadeh (nickname Shahrokh) for visitors to his portfolio.",
+    "You answer questions about Adib Rezazadeh for visitors to his portfolio.",
     "Use only the dossier. Do not invent employers, dates, metrics, or links.",
     "If the dossier does not say it, say so.",
     `Reply in ${lang === "fa" ? "Persian" : lang === "ar" ? "Arabic" : "English"}.`,

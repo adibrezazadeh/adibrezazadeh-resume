@@ -17,7 +17,7 @@ export function ContactCard({ lang }: { lang: Lang }) {
         {rows.map((row) => (
           <li key={row.label}>
             <span>{row.label}</span>
-            <a href={row.href} target={row.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">
+            <a href={row.href} dir="ltr" target={row.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">
               {row.value}
             </a>
           </li>

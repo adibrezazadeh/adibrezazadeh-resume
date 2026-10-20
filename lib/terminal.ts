@@ -73,7 +73,7 @@ export function runCommand(input: string, lang: Lang): CommandResult {
   }
 
   if (verb === "whoami") {
-    return { lines: answerQuestion("who is shahrokh", lang).answer.split("\n") };
+    return { lines: answerQuestion("who is adib", lang).answer.split("\n") };
   }
 
   if (verb === "projects") {
@@ -103,7 +103,7 @@ export function runCommand(input: string, lang: Lang): CommandResult {
 
   if (verb === "resume") return { lines: [ui[lang].resumeTitle], openApp: "resume" };
   if (verb === "clear") return { lines: [], clear: true };
-  if (verb === "pwd") return { lines: ["/home/shahrokh/office"] };
+  if (verb === "pwd") return { lines: ["/home/adib/office"] };
   if (verb === "lang") return { lines: [lang] };
 
   if (verb === "open") {

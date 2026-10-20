@@ -3,7 +3,7 @@ export function Boot({ line, progress }: { line?: string; progress?: number }) {
   return (
     <div className="boot" role="status">
       <div className="boot-glow" aria-hidden="true" />
-      <p className="boot-mark display">Shahrokh</p>
+      <p className="boot-mark display">Adib</p>
       {line ? <p>{line}</p> : null}
       {value !== null ? (
         <>

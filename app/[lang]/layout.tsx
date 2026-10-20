@@ -13,9 +13,9 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
   const { lang } = await params;
   if (!isLang(lang)) return {};
   const titles: Record<Lang, string> = {
-    en: "Shahrokh's office — Adib Rezazadeh",
-    fa: "دفتر شاهرخ — ادیب رضازاده",
-    ar: "مكتب شاهرخ — أديب رضازاده",
+    en: "Adib Rezazadeh — Senior Full-Stack Engineer",
+    fa: "ادیب رضازاده — مهندس ارشد فول‌استک",
+    ar: "أديب رضازاده — مهندس فل ستاك أول",
   };
   return {
     title: titles[lang],

@@ -10,13 +10,14 @@ const headings: Record<Lang, { summary: string; current: string; previous: strin
 export function resumeText(lang: Lang): string {
   const t = ui[lang];
   const h = headings[lang];
+  // Isolate marks keep "+98 917 736 7441" in order inside RTL text.
   const blocks: string[] = [
-    `${person.names[lang]} (${person.nickname})`,
+    person.names[lang],
     person.roleLine[lang],
     `${person.location[lang]} · ${person.relocation[lang]}`,
     "",
     `${t.email}: ${person.email}`,
-    `${t.phone}: ${person.phone}`,
+    `${t.phone}: ${lang === "en" ? person.phone : `⁦${person.phone}⁩`}`,
     `${t.linkedin}: ${person.linkedin}`,
     `${t.github}: ${person.github}`,
     "",

@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { ContactCard } from "@/components/ContactCard";
 import { ProjectArticle } from "@/components/ProjectArticle";
 import { SkillsList } from "@/components/SkillsList";
+import { usePhoto } from "@/lib/photo";
 import { education, person, projects, ui } from "@/lib/profile";
 import type { Lang } from "@/lib/types";
 
@@ -13,6 +14,7 @@ const LANG_LINKS = [
 
 export function SimpleSite({ lang, onEnterOffice }: { lang: Lang; onEnterOffice: () => void }) {
   const t = ui[lang];
+  const photo = usePhoto();
   return (
     <div className="simple">
       <a className="skip" href="#content">
@@ -20,8 +22,8 @@ export function SimpleSite({ lang, onEnterOffice }: { lang: Lang; onEnterOffice:
       </a>
       <header className="topbar">
         <a className="wordmark" href={`/${lang}`}>
-          <span>Shahrokh</span>
-          <small>{person.names[lang]}</small>
+          <span>{person.names[lang]}</span>
+          <small>{person.roleLine[lang]}</small>
         </a>
         <nav aria-label={t.langLabel}>
           {LANG_LINKS.map((item) => (
@@ -35,8 +37,12 @@ export function SimpleSite({ lang, onEnterOffice }: { lang: Lang; onEnterOffice:
         </button>
       </header>
       <main id="content">
-        <section className="hero">
-          <p className="kicker">{person.nickname}</p>
+        <section className={photo ? "hero hero-photo" : "hero"}>
+          {photo ? (
+            // eslint-disable-next-line @next/next/no-img-element -- a single static portrait; no responsive variants needed.
+            <img className="hero-portrait" src={photo} alt={person.names[lang]} width={460} height={460} />
+          ) : null}
+          <p className="kicker">{person.roleLine[lang]}</p>
           <h1 className="display">{person.names[lang]}</h1>
           <p className="role">{person.roleLine[lang]}</p>
           <p className="meta">
