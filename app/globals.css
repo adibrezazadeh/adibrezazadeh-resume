@@ -11,7 +11,7 @@
   --font-sans: var(--font-outfit), sans-serif;
   --font-display: var(--font-fraunces), serif;
   --font-mono: var(--font-plex), ui-monospace, monospace;
-  --font-rtl: var(--font-emkan), var(--font-vazir), sans-serif;
+  --font-rtl: var(--font-vazir), sans-serif;
 }
 
 * { box-sizing: border-box; }

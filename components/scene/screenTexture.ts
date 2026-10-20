@@ -101,7 +101,7 @@ export function paintDesktop(canvas: HTMLCanvasElement, lang: Lang, portrait: HT
   if (!ctx) return;
   const t = ui[lang];
   const rtl = lang !== "en";
-  const sans = rtl ? cssFont("--font-emkan", cssFont("--font-vazir", "sans-serif")) : cssFont("--font-outfit", "sans-serif");
+  const sans = rtl ? cssFont("--font-vazir", "sans-serif") : cssFont("--font-outfit", "sans-serif");
   const display = rtl ? sans : cssFont("--font-fraunces", "serif");
   const mono = cssFont("--font-plex", "monospace");
 

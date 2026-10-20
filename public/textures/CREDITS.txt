@@ -8,4 +8,4 @@ Modeled for this scene: the desk, monitor and light bar, keyboard, mouse, laptop
 
 The reflection environment is three.js's procedural RoomEnvironment; nothing is downloaded for it.
 
-Font: Emkan by FontIran (fontiran.com), used under the site owner's licence. It is not CC0 and may not be redistributed.
+Font: Vazirmatn by Saber Rastikerdar (github.com/rastikerdar/vazirmatn), SIL Open Font License 1.1; see assets/fonts/vazirmatn/OFL.txt.

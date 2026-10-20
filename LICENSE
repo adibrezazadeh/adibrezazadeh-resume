@@ -23,10 +23,10 @@ SOFTWARE.
 ---
 
 Not covered by this license:
-- The Emkan font files in app/fonts/emkan/ (FontIran, licensed to the site owner;
-  not redistributable). Replace them with an openly licensed font in your fork.
 - Adib Rezazadeh's personal content: resume text, contact details, project
   descriptions, photos (public/me.jpg, public/frames/, public/marks/). Replace
   them with your own.
 - Third-party CC0 assets in public/models/ and public/textures/ keep their own
   terms; see public/textures/CREDITS.txt.
+- The Vazirmatn font (assets/fonts/vazirmatn/, and loaded via next/font/google)
+  is under the SIL Open Font License 1.1; see assets/fonts/vazirmatn/OFL.txt.
