@@ -1,12 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AssistantDock, AssistantProvider, useAssistant } from "@/components/assistant/AssistantWidget";
 import { Boot } from "@/components/Boot";
 import { ContactCard } from "@/components/ContactCard";
 import { ProjectArticle } from "@/components/ProjectArticle";
-import { ShahrokhOS } from "@/components/os/ShahrokhOS";
 import { SimpleSite } from "@/components/SimpleSite";
 import { SkillsList } from "@/components/SkillsList";
 import { getProject, ui } from "@/lib/profile";
@@ -49,7 +48,9 @@ function ExperienceBody({ lang }: { lang: Lang }) {
   const [ready, setReady] = useState(false);
   const [selection, setSelection] = useState<Selection>({ kind: "room" });
   const [hover, setHover] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
   const onReady = useCallback(() => setReady(true), []);
+  const onProgress = useCallback((value: number) => setProgress(value), []);
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search).get("view");
@@ -119,13 +120,15 @@ function ExperienceBody({ lang }: { lang: Lang }) {
         {t.skip}
       </a>
       <OfficeCanvas
+        lang={lang}
         selection={selection}
         onSelect={setSelection}
         onHover={setHover}
         onOpenAssistant={() => assistant.setOpen(true)}
         onReady={onReady}
+        onProgress={onProgress}
       />
-      {!ready ? <Boot line={t.bootLine} /> : null}
+      {!ready ? <Boot line={t.loadingOffice} progress={progress} /> : null}
       {ready && selection.kind !== "os" ? (
         <>
           <header className="room-chrome">
@@ -143,6 +146,7 @@ function ExperienceBody({ lang }: { lang: Lang }) {
                   </a>
                 ))}
               </nav>
+              <RoomTone onLabel={t.soundOn} offLabel={t.soundOff} />
               <button className="btn" type="button" onClick={() => choose("simple")}>
                 {t.simpleMode}
               </button>
@@ -195,8 +199,56 @@ function ExperienceBody({ lang }: { lang: Lang }) {
           <ContactCard lang={lang} />
         </aside>
       ) : null}
-      {ready && selection.kind === "os" ? <ShahrokhOS lang={lang} onLeave={() => setSelection({ kind: "room" })} /> : null}
       <AssistantDock hidden={selection.kind === "os"} />
     </div>
+  );
+}
+
+function RoomTone({ onLabel, offLabel }: { onLabel: string; offLabel: string }) {
+  const audio = useRef<{ ctx: AudioContext; gain: GainNode } | null>(null);
+  const [on, setOn] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      void audio.current?.ctx.close();
+    };
+  }, []);
+
+  function toggle() {
+    if (!audio.current) {
+      const ctx = new AudioContext();
+      const length = ctx.sampleRate * 2;
+      const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < length; i += 1) {
+        const white = Math.random() * 2 - 1;
+        last = (last + 0.018 * white) / 1.018;
+        data[i] = last * 2.4;
+      }
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = 220;
+      const gain = ctx.createGain();
+      gain.gain.value = 0;
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      source.start();
+      audio.current = { ctx, gain };
+    }
+    const next = !on;
+    audio.current.gain.gain.setTargetAtTime(next ? 0.028 : 0, audio.current.ctx.currentTime, 0.08);
+    if (audio.current.ctx.state === "suspended") void audio.current.ctx.resume();
+    setOn(next);
+  }
+
+  return (
+    <button className="btn" type="button" aria-pressed={on} onClick={toggle}>
+      {on ? offLabel : onLabel}
+    </button>
   );
 }

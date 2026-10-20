@@ -30,9 +30,11 @@ const APPS: { kind: AppKind; glyph: string }[] = [
   { kind: "assistant", glyph: "✦" },
 ];
 
-export function ShahrokhOS({ lang, onLeave }: { lang: Lang; onLeave: () => void }) {
+export function ShahrokhOS({ lang, onLeave, embedded = false }: { lang: Lang; onLeave: () => void; embedded?: boolean }) {
   const t = ui[lang];
-  const [wins, setWins] = useState<Win[]>([{ key: "projects", kind: "projects", x: 78, y: 36, z: 1 }]);
+  const [wins, setWins] = useState<Win[]>([
+    { key: "projects", kind: "projects", x: embedded ? 148 : 78, y: embedded ? 16 : 36, z: 1 },
+  ]);
   const [top, setTop] = useState(1);
   const [clock, setClock] = useState("");
 
@@ -76,7 +78,7 @@ export function ShahrokhOS({ lang, onLeave }: { lang: Lang; onLeave: () => void 
   };
 
   return (
-    <div className="os-shell" role="dialog" aria-label="ShahrokhOS">
+    <div className={embedded ? "os-shell os-embedded" : "os-shell"} role="dialog" aria-label="ShahrokhOS">
       <header className="os-bar">
         <strong>ShahrokhOS</strong>
         <span className="os-caption">{t.desktopCaption}</span>

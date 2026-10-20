@@ -30,6 +30,8 @@ npm start
 
 Facts come from Adib's resume. Stogite, Hubly, Glonova, and Meraas Gallery also use those projects' public pages. Nothing else is filled in.
 
+The room uses CC0 textures and the `studio_small_09` HDRI from [Poly Haven](https://polyhaven.com), compressed for the web. See `public/textures/CREDITS.txt`.
+
 ## Optional assistant API
 
 Leave these unset and the assistant stays on local notes. If both are set, only questions the notes do not match are sent to an OpenAI-compatible chat endpoint. The key stays on the server.
