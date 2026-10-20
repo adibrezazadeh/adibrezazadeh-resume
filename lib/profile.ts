@@ -2,6 +2,11 @@ import type { Lang, Localized, Project } from "./types";
 
 export const person = {
   name: "Adib Rezazadeh",
+  names: {
+    en: "Adib Rezazadeh",
+    fa: "ادیب رضازاده",
+    ar: "أديب رضازاده",
+  } satisfies Localized,
   nickname: "Shahrokh",
   email: "adib.rezazadeh@gmail.com",
   phone: "+98 917 736 7441",

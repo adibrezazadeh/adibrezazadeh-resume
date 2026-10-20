@@ -1,8 +1,9 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Environment, Html, RoundedBox, useProgress, useTexture } from "@react-three/drei";
-import { Bloom, EffectComposer, Noise, SMAA, Vignette } from "@react-three/postprocessing";
+import { AccumulativeShadows, Environment, Html, RandomizedLight, RoundedBox, useGLTF, useProgress, useTexture } from "@react-three/drei";
+import { Bloom, DepthOfField, EffectComposer, Noise, SMAA, Vignette } from "@react-three/postprocessing";
+import type { DepthOfFieldEffect } from "postprocessing";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { ShahrokhOS } from "@/components/os/ShahrokhOS";
@@ -21,13 +22,15 @@ type Props = {
   onProgress: (value: number) => void;
 };
 
-const HOME: Pose = { id: "room", pos: [0.18, 1.26, 1.58], look: [-0.02, 1.02, -0.28] };
-const INTRO: Pose = { id: "intro", pos: [0.72, 1.62, 2.48], look: [0.02, 0.98, -0.4] };
+const HOME: Pose = { id: "room", pos: [0.12, 1.34, 2.22], look: [-0.02, 0.98, -0.45] };
+const INTRO: Pose = { id: "intro", pos: [0.95, 1.68, 3.05], look: [0.05, 0.92, -0.7] };
 
+const TABLE_TOP = 0.958;
+const TV_POS: [number, number, number] = [-0.22, TABLE_TOP, -0.5];
 const SCREEN = {
-  x: -0.06,
-  y: 1.22,
-  z: -0.15,
+  x: TV_POS[0],
+  y: TV_POS[1] + 0.26,
+  z: TV_POS[2] + 0.2,
 };
 
 function frameAt(index: number): [number, number, number] {
@@ -37,9 +40,9 @@ function frameAt(index: number): [number, number, number] {
 }
 
 function poseFor(selection: Selection): Pose {
-  if (selection.kind === "os") return { id: "os", pos: [SCREEN.x, SCREEN.y, 0.86], look: [SCREEN.x, SCREEN.y, SCREEN.z] };
-  if (selection.kind === "skills") return { id: "skills", pos: [0.85, 1.32, -0.15], look: [1.85, 1.2, -1.55] };
-  if (selection.kind === "contact") return { id: "contact", pos: [0.22, 1.12, 0.72], look: [0.52, 0.84, 0.02] };
+  if (selection.kind === "os") return { id: "os", pos: [SCREEN.x, SCREEN.y, SCREEN.z + 0.98], look: [SCREEN.x, SCREEN.y, SCREEN.z] };
+  if (selection.kind === "skills") return { id: "skills", pos: [0.15, 1.22, -0.72], look: [1.05, 1.15, -1.85] };
+  if (selection.kind === "contact") return { id: "contact", pos: [0.28, 1.12, 0.95], look: [0.72, 1.0, 0.12] };
   if (selection.kind === "project") {
     const index = Math.max(0, projects.findIndex((project) => project.id === selection.id));
     const frame = frameAt(index);
@@ -73,7 +76,7 @@ function LoadBridge({ onProgress, onReady }: { onProgress: (value: number) => vo
   return null;
 }
 
-function CameraRig({ pose, drag }: { pose: Pose; drag: { current: boolean } }) {
+function CameraRig({ pose, drag, introOut }: { pose: Pose; drag: { current: boolean }; introOut: { current: number } }) {
   const camera = useThree((state) => state.camera);
   const gl = useThree((state) => state.gl);
   const currentPos = useRef(new THREE.Vector3(...INTRO.pos));
@@ -156,6 +159,7 @@ function CameraRig({ pose, drag }: { pose: Pose; drag: { current: boolean } }) {
     }
     camera.position.copy(currentPos.current);
     camera.lookAt(currentLook.current);
+    introOut.current = intro.current;
   });
 
   return null;
@@ -202,9 +206,7 @@ function HitBox({
 }
 
 type Maps = {
-  wood: THREE.MeshStandardMaterial;
   wall: THREE.MeshStandardMaterial;
-  leather: THREE.MeshStandardMaterial;
   planks: THREE.MeshStandardMaterial;
   carpet: THREE.MeshStandardMaterial;
   frames: Record<string, THREE.Texture>;
@@ -250,15 +252,9 @@ const FRAME_IDS = projects.map((project) => project.id);
 
 function useMaps(): Maps {
   const tex = useTexture({
-    woodDiff: "/textures/wood_diff.jpg",
-    woodNor: "/textures/wood_nor.jpg",
-    woodRough: "/textures/wood_rough.jpg",
     wallDiff: "/textures/wall_diff.jpg",
     wallNor: "/textures/wall_nor.jpg",
     wallRough: "/textures/wall_rough.jpg",
-    leatherDiff: "/textures/leather_diff.jpg",
-    leatherNor: "/textures/leather_nor.jpg",
-    leatherRough: "/textures/leather_rough.jpg",
     planksDiff: "/textures/planks_diff.jpg",
     planksNor: "/textures/planks_nor.jpg",
     planksRough: "/textures/planks_rough.jpg",
@@ -268,9 +264,7 @@ function useMaps(): Maps {
   });
   const posters = useTexture(FRAME_IDS.map((id) => `/frames/${id}.jpg`));
   return useMemo(() => {
-    prepare(tex.woodDiff, true);
     prepare(tex.wallDiff, true);
-    prepare(tex.leatherDiff, true);
     prepare(tex.planksDiff, true);
     prepare(tex.carpetDiff, true);
     posters.forEach((poster) => {
@@ -278,33 +272,94 @@ function useMaps(): Maps {
       poster.anisotropy = 8;
     });
     return {
-      wood: material(tex.woodDiff, tex.woodNor, tex.woodRough, [1.4, 0.7], { roughness: 0.62 }),
       wall: material(tex.wallDiff, tex.wallNor, tex.wallRough, [2.2, 1.4], { color: "#8a8178", roughness: 0.92 }),
-      leather: material(tex.leatherDiff, tex.leatherNor, tex.leatherRough, [1.2, 1.2], { color: "#4a3428", roughness: 0.72 }),
       planks: material(tex.planksDiff, tex.planksNor, tex.planksRough, [3.2, 2.6], { color: "#6a5040", roughness: 0.86 }),
       carpet: material(tex.carpetDiff, tex.carpetNor, tex.carpetRough, [1.6, 1.3], { color: "#5c3a32", roughness: 0.95 }),
       frames: Object.fromEntries(FRAME_IDS.map((id, index) => [id, posters[index]])),
     };
     // Textures are stable once useTexture resolves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tex.woodDiff, tex.wallDiff, tex.leatherDiff, tex.planksDiff, tex.carpetDiff, posters]);
+  }, [tex.wallDiff, tex.planksDiff, tex.carpetDiff, posters]);
 }
 
-function leafMap() {
+const MODEL = {
+  table: "/models/painted_wooden_table/painted_wooden_table_1k.gltf",
+  chair: "/models/GreenChair_01/GreenChair_01_1k.gltf",
+  tv: "/models/Television_01/Television_01_1k.gltf",
+  lamp: "/models/desk_lamp_arm_01/desk_lamp_arm_01_1k.gltf",
+  shelf: "/models/wooden_bookshelf_worn/wooden_bookshelf_worn_1k.gltf",
+  books: "/models/book_encyclopedia_set_01/book_encyclopedia_set_01_1k.gltf",
+  plant: "/models/potted_plant_01/potted_plant_01_1k.gltf",
+  notebook: "/models/binder_notebook/binder_notebook_1k.gltf",
+  pen: "/models/stationery_supplies/stationery_supplies_1k.gltf",
+  laptop: "/models/classic_laptop/classic_laptop_1k.gltf",
+  cables: "/models/modular_electric_cables/modular_electric_cables_1k.gltf",
+} as const;
+
+function prepareMesh(root: THREE.Object3D) {
+  root.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    const next = list.map((source) => {
+      const mat = source.clone();
+      if (mat instanceof THREE.MeshStandardMaterial) {
+        mat.envMapIntensity = 0.55;
+        if (/light/i.test(mat.name)) {
+          mat.emissiveIntensity = 8;
+          mat.toneMapped = false;
+        }
+      }
+      return mat;
+    });
+    mesh.material = Array.isArray(mesh.material) ? next : next[0];
+  });
+}
+
+function useProp(url: string) {
+  const { scene } = useGLTF(url);
+  return useMemo(() => {
+    const clone = scene.clone(true);
+    prepareMesh(clone);
+    return clone;
+  }, [scene]);
+}
+
+function Prop({ url, position, rotation, scale }: { url: string; position?: [number, number, number]; rotation?: [number, number, number]; scale?: number }) {
+  const object = useProp(url);
+  return <primitive object={object} position={position} rotation={rotation} scale={scale} />;
+}
+
+function cityLights() {
   const canvas = document.createElement("canvas");
-  canvas.width = 128;
-  canvas.height = 256;
+  canvas.width = 640;
+  canvas.height = 480;
   const ctx = canvas.getContext("2d");
   if (!ctx) return new THREE.CanvasTexture(canvas);
-  ctx.clearRect(0, 0, 128, 256);
-  ctx.fillStyle = "#1c4630";
-  ctx.beginPath();
-  ctx.ellipse(64, 150, 34, 96, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#2d6a46";
-  ctx.beginPath();
-  ctx.ellipse(64, 140, 18, 64, 0, 0, Math.PI * 2);
-  ctx.fill();
+  const sky = ctx.createLinearGradient(0, 0, 0, 480);
+  sky.addColorStop(0, "#24364c");
+  sky.addColorStop(0.42, "#101820");
+  sky.addColorStop(1, "#07090d");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, 640, 480);
+  const tones = ["#f3d7a4", "#d5e6f6", "#9eb6d4", "#ffc48a", "#e7eef6", "#7f93ab"];
+  for (let i = 0; i < 90; i += 1) {
+    const x = Math.random() * 640;
+    const y = 150 + Math.random() * 300;
+    const r = 2 + Math.random() * 16;
+    ctx.globalAlpha = 0.18 + Math.random() * 0.55;
+    ctx.fillStyle = tones[i % tones.length];
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = "#0c1016";
+  for (let i = 0; i < 18; i += 1) {
+    ctx.fillRect(24 + (i % 9) * 68, 250 + Math.floor(i / 9) * 70, 36, 48 + (i % 3) * 16);
+  }
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -312,13 +367,13 @@ function leafMap() {
 
 function Dust({ reduce }: { reduce: boolean }) {
   const ref = useRef<THREE.Points>(null);
-  const count = 160;
+  const count = 140;
   const positions = useMemo(() => {
     const data = new Float32Array(count * 3);
     for (let i = 0; i < count; i += 1) {
-      data[i * 3] = (Math.random() - 0.5) * 0.7;
-      data[i * 3 + 1] = Math.random() * 0.85;
-      data[i * 3 + 2] = (Math.random() - 0.45) * 0.7;
+      data[i * 3] = (Math.random() - 0.5) * 0.9;
+      data[i * 3 + 1] = Math.random() * 0.7;
+      data[i * 3 + 2] = (Math.random() - 0.2) * 0.8;
     }
     return data;
   }, []);
@@ -327,126 +382,123 @@ function Dust({ reduce }: { reduce: boolean }) {
     const attr = ref.current.geometry.getAttribute("position");
     const array = attr.array as Float32Array;
     for (let i = 0; i < count; i += 1) {
-      array[i * 3 + 1] += dt * 0.035;
-      array[i * 3] += Math.sin(array[i * 3 + 1] * 8) * dt * 0.01;
-      if (array[i * 3 + 1] > 0.9) array[i * 3 + 1] = 0;
+      array[i * 3 + 1] += dt * 0.03;
+      array[i * 3] += Math.sin(array[i * 3 + 1] * 7) * dt * 0.008;
+      if (array[i * 3 + 1] > 0.75) array[i * 3 + 1] = 0;
     }
     attr.needsUpdate = true;
   });
   return (
-    <points ref={ref} position={[0.58, 1.15, -0.18]}>
+    <points ref={ref} position={[0.45, 1.15, -0.2]}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial color="#ffd7a8" size={0.008} transparent opacity={0.55} depthWrite={false} sizeAttenuation />
+      <pointsMaterial color="#ffd7a8" size={0.007} transparent opacity={0.45} depthWrite={false} sizeAttenuation />
     </points>
   );
 }
 
-function Steam({ reduce }: { reduce: boolean }) {
-  const ref = useRef<THREE.Points>(null);
-  const count = 18;
-  const seeds = useMemo(() => Array.from({ length: count }, () => Math.random() * 10), []);
-  const positions = useMemo(() => new Float32Array(count * 3), []);
-  useFrame((state) => {
-    if (!ref.current) return;
-    const attr = ref.current.geometry.getAttribute("position");
-    const array = attr.array as Float32Array;
-    const t = state.clock.elapsedTime;
-    for (let i = 0; i < count; i += 1) {
-      const life = reduce ? 0.2 : (t * 0.25 + seeds[i]) % 1;
-      array[i * 3] = Math.sin(t + seeds[i]) * 0.012 * life;
-      array[i * 3 + 1] = life * 0.16;
-      array[i * 3 + 2] = Math.cos(t * 0.8 + seeds[i]) * 0.01 * life;
-    }
-    attr.needsUpdate = true;
-  });
-  return (
-    <points ref={ref} position={[-0.62, 0.86, 0.02]}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-      </bufferGeometry>
-      <pointsMaterial color="#f4efe8" size={0.018} transparent opacity={0.28} depthWrite={false} />
-    </points>
-  );
-}
-
-function LampLight() {
+function DeskLamp() {
+  const lamp = useProp(MODEL.lamp);
   const light = useRef<THREE.SpotLight>(null);
   const target = useRef<THREE.Object3D>(null);
   useEffect(() => {
     if (light.current && target.current) light.current.target = target.current;
   }, []);
   return (
-    <>
-      <object3D ref={target} position={[0.02, 0.78, -0.08]} />
+    <group position={[0.95, TABLE_TOP + 0.088, -0.42]} rotation={[0, Math.PI * 0.9, 0]}>
+      <primitive object={lamp} />
+      <object3D ref={target} position={[0.05, 0.12, -0.95]} />
       <spotLight
         ref={light}
-        position={[0.62, 1.48, -0.22]}
-        angle={0.78}
-        penumbra={0.88}
-        intensity={46}
+        position={[0, 0.7, -0.17]}
+        angle={0.62}
+        penumbra={0.82}
+        intensity={160}
         color="#ffb15a"
-        distance={5.5}
+        distance={4.2}
         decay={2}
         castShadow
         shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0006}
-        shadow-normalBias={0.03}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.04}
       />
-      <pointLight position={[0.58, 1.28, -0.16]} color="#ffc48a" intensity={6} distance={2.2} decay={2} />
-      <directionalLight position={[-2.2, 2.1, -1.4]} intensity={0.45} color="#8ea4b8" />
-    </>
+      <pointLight position={[0, 0.69, -0.18]} color="#ffe1b5" intensity={14} distance={1.5} decay={2} />
+    </group>
   );
 }
 
-function Monitor({
-  interactive,
-  lang,
-  onLeave,
-}: {
-  interactive: boolean;
-  lang: Lang;
-  onLeave: () => void;
-}) {
+function Monitor({ interactive, lang, onLeave }: { interactive: boolean; lang: Lang; onLeave: () => void }) {
+  const tv = useProp(MODEL.tv);
   return (
-    <group position={[-0.06, 0.775, -0.34]}>
-      <RoundedBox args={[0.8, 0.64, 0.48]} radius={0.045} smoothness={4} position={[0, 0.46, -0.08]} castShadow>
-        <meshStandardMaterial color="#161412" roughness={0.42} metalness={0.12} />
-      </RoundedBox>
-      <mesh position={[0, 0.48, 0.155]}>
-        <planeGeometry args={[0.66, 0.5]} />
-        <meshStandardMaterial color="#050505" roughness={0.7} />
+    <group position={TV_POS}>
+      <primitive object={tv} />
+      <mesh position={[0, 0.26, 0.186]}>
+        <planeGeometry args={[0.44, 0.32]} />
+        <meshBasicMaterial color="#100c09" />
       </mesh>
-      <mesh position={[0, 0.48, 0.162]}>
-        <planeGeometry args={[0.58, 0.42]} />
-        <meshStandardMaterial color="#ffd2a6" emissive="#ffb066" emissiveIntensity={0.55} toneMapped={false} />
-      </mesh>
-      <Html
-        transform
-        distanceFactor={0.258}
-        position={[0, 0.48, 0.17]}
-        zIndexRange={[20, 0]}
-        style={{ pointerEvents: "none" }}
-      >
+      <Html transform distanceFactor={0.162} position={[0, 0.258, 0.2]} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
         <div className="crt-screen" style={{ width: 900, height: 640, pointerEvents: interactive ? "auto" : "none" }}>
           <ShahrokhOS lang={lang} embedded onLeave={onLeave} />
           <div className="crt-scan" />
         </div>
       </Html>
-      <mesh position={[0, 0.12, 0.02]} castShadow>
-        <cylinderGeometry args={[0.045, 0.06, 0.22, 16]} />
-        <meshStandardMaterial color="#2a2622" metalness={0.45} roughness={0.35} />
-      </mesh>
-      <RoundedBox args={[0.34, 0.035, 0.24]} radius={0.01} smoothness={2} position={[0, 0.02, 0.04]} castShadow>
-        <meshStandardMaterial color="#1a1816" metalness={0.35} roughness={0.4} />
-      </RoundedBox>
     </group>
   );
 }
 
-function DeskSet({ mats, interactive, lang, onLeave, onSelect, onHover, onOpenAssistant, drag, reduce }: {
-  mats: Maps;
+function Cables() {
+  const { scene } = useGLTF(MODEL.cables);
+  const group = useMemo(() => {
+    const root = new THREE.Group();
+    const layout: [string, number, number, number][] = [
+      ["cable_scurve_2", -0.06, 0.04, 0.5],
+      ["cable_straight_medium", 0.1, -0.02, 1.2],
+      ["cable_end", 0.02, 0.08, -0.2],
+      ["cable_turn_short", 0.18, 0.05, 0.9],
+    ];
+    layout.forEach(([name, x, z, yaw]) => {
+      const src = scene.getObjectByName(name);
+      if (!src) return;
+      const clone = src.clone(true);
+      clone.position.set(x, 0, z);
+      clone.rotation.set(-Math.PI / 2, 0, yaw);
+      prepareMesh(clone);
+      root.add(clone);
+    });
+    return root;
+  }, [scene]);
+  return <primitive object={group} position={[-0.28, TABLE_TOP + 0.01, -0.18]} />;
+}
+
+function DeskBooks() {
+  const { scene } = useGLTF(MODEL.books);
+  const group = useMemo(() => {
+    const root = new THREE.Group();
+    ["book_encyclopedia_set_01_book01", "book_encyclopedia_set_01_book08", "book_encyclopedia_set_01_book16"].forEach((name, index) => {
+      const src = scene.getObjectByName(name);
+      if (!src) return;
+      const clone = src.clone(true);
+      clone.position.set(index * 0.05, 0, 0);
+      clone.rotation.set(0, (index - 1) * 0.08, 0);
+      prepareMesh(clone);
+      root.add(clone);
+    });
+    return root;
+  }, [scene]);
+  return <primitive object={group} position={[-0.88, TABLE_TOP, 0.12]} rotation={[0, 0.15, 0]} />;
+}
+
+function Desk({
+  interactive,
+  lang,
+  onLeave,
+  onSelect,
+  onHover,
+  onOpenAssistant,
+  drag,
+  reduce,
+}: {
   interactive: boolean;
   lang: Lang;
   onLeave: () => void;
@@ -456,238 +508,65 @@ function DeskSet({ mats, interactive, lang, onLeave, onSelect, onHover, onOpenAs
   drag: { current: boolean };
   reduce: boolean;
 }) {
-  const shade = useRef<THREE.Mesh>(null);
-  useFrame((state) => {
-    if (!shade.current) return;
-    const mat = shade.current.material;
-    if (mat instanceof THREE.MeshStandardMaterial) {
-      mat.emissiveIntensity = 1.15 + Math.sin(state.clock.elapsedTime * 2.4) * 0.06;
-    }
-  });
-
-  const keys = useMemo(() => {
-    const list: [number, number, number][] = [];
-    for (let row = 0; row < 4; row += 1) {
-      for (let col = 0; col < 12; col += 1) {
-        list.push([-0.22 + col * 0.034, 0.8, -0.02 + row * 0.032]);
-      }
-    }
-    return list;
-  }, []);
-
   return (
     <group>
-      <RoundedBox args={[1.78, 0.055, 0.88]} radius={0.012} smoothness={3} position={[0.04, 0.752, -0.1]} castShadow receiveShadow material={mats.wood} />
-      {[
-        [-0.74, -0.42],
-        [0.78, -0.42],
-        [-0.74, 0.22],
-        [0.78, 0.22],
-      ].map(([x, z]) => (
-        <mesh key={`${x}${z}`} position={[x, 0.36, z]} castShadow material={mats.wood}>
-          <cylinderGeometry args={[0.035, 0.04, 0.72, 12]} />
-        </mesh>
-      ))}
-
+      <Prop url={MODEL.table} position={[0.02, 0, -0.18]} />
       <Monitor interactive={interactive} lang={lang} onLeave={onLeave} />
       {!interactive ? (
         <HitBox
           id="monitor"
           position={[SCREEN.x, SCREEN.y, SCREEN.z]}
-          size={[0.72, 0.56, 0.12]}
+          size={[0.5, 0.38, 0.08]}
           onPick={() => onSelect({ kind: "os" })}
           onHover={onHover}
           drag={drag}
         />
       ) : null}
-
-      <group position={[-0.02, 0.79, -0.0]}>
-        <RoundedBox args={[0.48, 0.018, 0.16]} radius={0.004} smoothness={2} receiveShadow>
-          <meshStandardMaterial color="#1c1916" roughness={0.55} />
-        </RoundedBox>
-        {keys.map(([x, y, z]) => (
-          <mesh key={`${x}${z}`} position={[x, y - 0.782, z]} castShadow>
-            <boxGeometry args={[0.026, 0.012, 0.024]} />
-            <meshStandardMaterial color="#2a2724" roughness={0.4} />
-          </mesh>
-        ))}
-      </group>
-      <mesh position={[0.42, 0.8, 0.02]} castShadow>
-        <sphereGeometry args={[0.028, 16, 12]} />
-        <meshStandardMaterial color="#1a1816" roughness={0.35} />
-      </mesh>
-
-      <group position={[-0.62, 0.78, 0.02]}>
-        <mesh castShadow>
-          <cylinderGeometry args={[0.045, 0.038, 0.07, 24]} />
-          <meshStandardMaterial color="#f3eee6" roughness={0.28} metalness={0.02} />
-        </mesh>
-        <mesh position={[0, 0.03, 0]}>
-          <circleGeometry args={[0.038, 24]} />
-          <meshStandardMaterial color="#3a2418" roughness={0.4} />
-        </mesh>
-        <mesh position={[0.05, 0.01, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <torusGeometry args={[0.028, 0.008, 8, 16, Math.PI]} />
-          <meshStandardMaterial color="#f3eee6" roughness={0.28} />
-        </mesh>
-      </group>
-      <Steam reduce={reduce} />
-
-      <group position={[0.52, 0.78, 0.08]}>
-        <RoundedBox args={[0.16, 0.028, 0.26]} radius={0.006} smoothness={2} castShadow>
-          <meshStandardMaterial color="#1a1814" roughness={0.45} metalness={0.15} />
-        </RoundedBox>
-        <mesh position={[0, 0.04, -0.02]} castShadow>
-          <boxGeometry args={[0.05, 0.035, 0.11]} />
-          <meshStandardMaterial color="#24201c" roughness={0.4} />
-        </mesh>
-        <mesh position={[0.045, 0.045, 0.02]} rotation={[0.4, 0, 0.2]}>
-          <cylinderGeometry args={[0.012, 0.012, 0.12, 8]} />
-          <meshStandardMaterial color="#2c2824" roughness={0.35} />
-        </mesh>
-      </group>
-      <HitBox
-        id="phone"
-        position={[0.52, 0.84, 0.08]}
-        size={[0.28, 0.12, 0.36]}
-        onPick={() => onSelect({ kind: "contact" })}
-        onHover={onHover}
-        drag={drag}
-      />
-
-      <group position={[0.62, 0, -0.28]}>
-        <mesh position={[0, 0.8, 0]} castShadow>
-          <cylinderGeometry args={[0.09, 0.11, 0.03, 20]} />
-          <meshStandardMaterial color="#b08a4e" metalness={0.72} roughness={0.28} />
-        </mesh>
-        <mesh position={[0.02, 1.05, 0.02]} rotation={[0.15, 0, -0.2]} castShadow>
-          <cylinderGeometry args={[0.012, 0.012, 0.42, 10]} />
-          <meshStandardMaterial color="#c6a15b" metalness={0.7} roughness={0.26} />
-        </mesh>
-        <mesh ref={shade} position={[0.08, 1.28, 0.08]} rotation={[0.55, 0.2, 0.35]} castShadow>
-          <coneGeometry args={[0.16, 0.16, 24, 1, true]} />
-          <meshStandardMaterial color="#f0d7b0" emissive="#ff9a3c" emissiveIntensity={1.2} side={THREE.DoubleSide} roughness={0.45} metalness={0.15} />
-        </mesh>
-        <mesh position={[0.06, 1.22, 0.06]}>
-          <sphereGeometry args={[0.028, 16, 12]} />
-          <meshStandardMaterial color="#fff1d2" emissive="#ffd39a" emissiveIntensity={3} toneMapped={false} />
-        </mesh>
-      </group>
+      <Prop url={MODEL.laptop} position={[0.58, TABLE_TOP + 0.012, 0.02]} rotation={[0, -0.45, 0]} />
+      <Prop url={MODEL.notebook} position={[0.18, TABLE_TOP, 0.22]} rotation={[0, 0.25, 0]} />
+      <Prop url={MODEL.pen} position={[0.42, TABLE_TOP + 0.037, 0.24]} rotation={[0, 0.9, 0]} />
+      <DeskBooks />
+      <Cables />
+      <DeskLamp />
       <Dust reduce={reduce} />
 
-      <group position={[-0.48, 0.8, -0.28]}>
-        <mesh>
-          <cylinderGeometry args={[0.045, 0.05, 0.02, 16]} />
-          <meshStandardMaterial color="#8a7048" metalness={0.55} roughness={0.35} />
-        </mesh>
-        <mesh position={[0, 0.045, 0]}>
-          <sphereGeometry args={[0.055, 20, 16]} />
-          <meshStandardMaterial color="#e7c27a" emissive="#ffb703" emissiveIntensity={0.35} roughness={0.18} metalness={0.05} transparent opacity={0.92} />
+      <group position={[0.86, TABLE_TOP, 0.16]} rotation={[0, -0.4, 0]}>
+        <RoundedBox args={[0.07, 0.012, 0.14]} radius={0.003} position={[0, 0.01, 0]} castShadow>
+          <meshStandardMaterial color="#1a1816" roughness={0.45} metalness={0.2} />
+        </RoundedBox>
+        <RoundedBox args={[0.055, 0.018, 0.11]} radius={0.004} position={[0, 0.026, -0.01]} castShadow>
+          <meshStandardMaterial color="#221e1a" roughness={0.4} />
+        </RoundedBox>
+        <mesh position={[0.03, 0.03, 0.02]} rotation={[0.5, 0, 0.4]} castShadow>
+          <cylinderGeometry args={[0.006, 0.006, 0.07, 8]} />
+          <meshStandardMaterial color="#2a2622" roughness={0.35} />
         </mesh>
       </group>
-      <HitBox
-        id="orb"
-        position={[-0.48, 0.86, -0.28]}
-        size={[0.16, 0.16, 0.16]}
-        onPick={onOpenAssistant}
-        onHover={onHover}
-        drag={drag}
-      />
+      <HitBox id="phone" position={[0.86, TABLE_TOP + 0.04, 0.16]} size={[0.18, 0.08, 0.22]} onPick={() => onSelect({ kind: "contact" })} onHover={onHover} drag={drag} />
+
+      <group position={[-0.62, TABLE_TOP, 0.16]}>
+        <mesh position={[0, 0.02, 0]}>
+          <cylinderGeometry args={[0.028, 0.032, 0.012, 16]} />
+          <meshStandardMaterial color="#8d7348" metalness={0.65} roughness={0.32} />
+        </mesh>
+        <mesh position={[0, 0.055, 0]}>
+          <sphereGeometry args={[0.04, 24, 18]} />
+          <meshStandardMaterial color="#e7c27a" emissive="#ffb703" emissiveIntensity={0.45} roughness={0.18} metalness={0.04} />
+        </mesh>
+      </group>
+      <HitBox id="orb" position={[-0.62, TABLE_TOP + 0.06, 0.16]} size={[0.12, 0.12, 0.12]} onPick={onOpenAssistant} onHover={onHover} drag={drag} />
     </group>
   );
 }
 
-function Chair({ mats }: { mats: Maps }) {
+function Shelf({ onSelect, onHover, drag }: { onSelect: Props["onSelect"]; onHover: Props["onHover"]; drag: { current: boolean } }) {
   return (
-    <group position={[0.02, 0, 0.62]} rotation={[0, 0.12, 0]}>
-      <RoundedBox args={[0.48, 0.08, 0.48]} radius={0.03} smoothness={3} position={[0, 0.48, 0]} castShadow material={mats.leather} />
-      <RoundedBox args={[0.48, 0.5, 0.08]} radius={0.03} smoothness={3} position={[0, 0.82, -0.2]} castShadow material={mats.leather} />
-      {[
-        [-0.18, -0.18],
-        [0.18, -0.18],
-        [-0.18, 0.18],
-        [0.18, 0.18],
-      ].map(([x, z]) => (
-        <mesh key={`${x}${z}`} position={[x, 0.24, z]} castShadow>
-          <cylinderGeometry args={[0.02, 0.02, 0.46, 8]} />
-          <meshStandardMaterial color="#1c1916" metalness={0.4} roughness={0.4} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function Plant({ leaf }: { leaf: THREE.Texture }) {
-  return (
-    <group position={[-1.55, 0, -1.55]}>
-      <mesh position={[0, 0.16, 0]} castShadow>
-        <cylinderGeometry args={[0.12, 0.1, 0.22, 16]} />
-        <meshStandardMaterial color="#6d3b2a" roughness={0.7} />
-      </mesh>
-      <mesh position={[0, 0.28, 0]}>
-        <cylinderGeometry args={[0.14, 0.12, 0.05, 16]} />
-        <meshStandardMaterial color="#5a321f" roughness={0.65} />
-      </mesh>
-      {Array.from({ length: 7 }, (_, index) => {
-        const angle = (index / 7) * Math.PI * 2;
-        return (
-          <mesh key={angle} position={[Math.cos(angle) * 0.05, 0.55, Math.sin(angle) * 0.05]} rotation={[0.4, angle, 0.2]} castShadow>
-            <planeGeometry args={[0.16, 0.36]} />
-            <meshStandardMaterial map={leaf} transparent alphaTest={0.4} side={THREE.DoubleSide} roughness={0.7} />
-          </mesh>
-        );
-      })}
-    </group>
-  );
-}
-
-function Bookcase({ mats, onSelect, onHover, drag }: {
-  mats: Maps;
-  onSelect: Props["onSelect"];
-  onHover: Props["onHover"];
-  drag: { current: boolean };
-}) {
-  const books = useMemo(() => {
-    const colors = ["#6e2d2d", "#1d4a46", "#c4892a", "#243056", "#d8c7a4", "#5a3150", "#8a4b28", "#2f4d6a", "#3e2a22", "#7a1f2b"];
-    const list: { y: number; z: number; h: number; w: number; color: string }[] = [];
-    [0.42, 0.86, 1.3, 1.74].forEach((shelf, shelfIndex) => {
-      let z = -1.95;
-      let i = 0;
-      while (z < -1.15) {
-        const w = 0.045 + ((i * 3 + shelfIndex) % 4) * 0.008;
-        const h = 0.26 + ((i + shelfIndex) % 5) * 0.018;
-        list.push({ y: shelf + h / 2, z: z + w / 2, h, w, color: colors[(i + shelfIndex) % colors.length] });
-        z += w + 0.006;
-        i += 1;
-      }
-    });
-    return list;
-  }, []);
-
-  return (
-    <group>
-      <mesh position={[2.22, 1.15, -1.55]} receiveShadow material={mats.wood}>
-        <boxGeometry args={[0.34, 2.15, 1.15]} />
-      </mesh>
-      {[0.38, 0.82, 1.26, 1.7, 2.12].map((y) => (
-        <mesh key={y} position={[2.08, y, -1.55]} receiveShadow material={mats.wood}>
-          <boxGeometry args={[0.3, 0.025, 1.05]} />
-        </mesh>
-      ))}
-      {books.map((book, index) => (
-        <mesh key={index} position={[2.02, book.y, book.z]} castShadow>
-          <boxGeometry args={[0.16, book.h, book.w]} />
-          <meshStandardMaterial color={book.color} roughness={0.62} />
-        </mesh>
-      ))}
-      <HitBox
-        id="shelf"
-        position={[2.05, 1.2, -1.55]}
-        size={[0.5, 2.2, 1.2]}
-        onPick={() => onSelect({ kind: "skills" })}
-        onHover={onHover}
-        drag={drag}
-      />
+    <group position={[1.12, 0, -1.88]}>
+      <Prop url={MODEL.shelf} />
+      <Prop url={MODEL.books} position={[-0.52, 0.36, -0.14]} />
+      <Prop url={MODEL.books} position={[-0.36, 0.64, -0.14]} />
+      <Prop url={MODEL.books} position={[-0.5, 0.93, -0.14]} />
+      <HitBox id="shelf" position={[0, 1.05, 0.1]} size={[1.3, 2.05, 0.55]} onPick={() => onSelect({ kind: "skills" })} onHover={onHover} drag={drag} />
     </group>
   );
 }
@@ -732,7 +611,7 @@ function WallFrames({ mats, onSelect, onHover, drag }: {
   );
 }
 
-function RoomShell({ mats }: { mats: Maps }) {
+function RoomShell({ mats, city }: { mats: Maps; city: THREE.Texture }) {
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow material={mats.planks}>
@@ -750,20 +629,32 @@ function RoomShell({ mats }: { mats: Maps }) {
       <mesh position={[2.6, 1.35, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow material={mats.wall}>
         <planeGeometry args={[4.4, 2.7]} />
       </mesh>
-      <mesh position={[-1.15, 1.7, -2.18]}>
-        <planeGeometry args={[1.15, 1.05]} />
-        <meshStandardMaterial color="#0c1218" emissive="#1a2a3a" emissiveIntensity={0.35} roughness={0.2} />
+      <mesh position={[-1.35, 1.62, -2.175]}>
+        <planeGeometry args={[1.58, 1.28]} />
+        <meshStandardMaterial color="#16130f" roughness={0.8} />
       </mesh>
-      {[-1.55, -1.15, -0.75].map((x) => (
-        <mesh key={x} position={[x, 1.7, -2.16]}>
-          <boxGeometry args={[0.03, 1.05, 0.02]} />
-          <meshStandardMaterial color="#2a241c" roughness={0.6} />
+      <mesh position={[-1.35, 1.62, -2.16]}>
+        <planeGeometry args={[1.42, 1.12]} />
+        <meshStandardMaterial map={city} emissiveMap={city} emissive="#c5d4e6" emissiveIntensity={0.85} roughness={0.4} toneMapped={false} />
+      </mesh>
+      {[-1.9, -1.35, -0.8].map((x) => (
+        <mesh key={x} position={[x, 1.62, -2.145]} castShadow>
+          <boxGeometry args={[0.04, 1.12, 0.035]} />
+          <meshStandardMaterial color="#3a3228" roughness={0.5} />
         </mesh>
       ))}
-      <mesh rotation={[-Math.PI / 2, 0, 0.1]} position={[0.05, 0.012, 0.35]} receiveShadow material={mats.carpet}>
-        <planeGeometry args={[2.1, 1.45]} />
+      {[-1.35].map((x) => (
+        <mesh key={`rail-${x}`} position={[x, 1.62, -2.145]}>
+          <boxGeometry args={[1.42, 0.04, 0.035]} />
+          <meshStandardMaterial color="#3a3228" roughness={0.5} />
+        </mesh>
+      ))}
+      <mesh rotation={[-Math.PI / 2, 0, 0.08]} position={[0.05, 0.012, 0.42]} receiveShadow material={mats.carpet}>
+        <planeGeometry args={[2.2, 1.5]} />
       </mesh>
-      <ContactShadows position={[0.05, 0.011, -0.05]} opacity={0.45} scale={4.2} blur={2.4} far={1.6} color="#000" />
+      <AccumulativeShadows temporal frames={48} alphaTest={0.65} scale={9} position={[0.1, 0.015, -0.15]} color="#140e0a" opacity={0.72} colorBlend={1.4}>
+        <RandomizedLight amount={8} radius={3.2} ambient={0.45} intensity={1.1} position={[0.55, 2.3, -0.1]} bias={0.001} size={7} mapSize={1024} />
+      </AccumulativeShadows>
     </group>
   );
 }
@@ -777,18 +668,19 @@ function OfficeScene({
   drag,
 }: Omit<Props, "onReady" | "onProgress"> & { drag: { current: boolean } }) {
   const mats = useMaps();
-  const leaf = useMemo(() => leafMap(), []);
+  const city = useMemo(() => cityLights(), []);
   const reduce = useMemo(() => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches, []);
   const interactive = selection.kind === "os";
 
   return (
     <>
-      <Environment files="/textures/studio.hdr" environmentIntensity={0.16} />
-      <hemisphereLight args={["#1c2430", "#2a1a12", 0.08]} />
-      <LampLight />
-      <RoomShell mats={mats} />
-      <DeskSet
-        mats={mats}
+      <Environment files="/textures/studio.hdr" environmentIntensity={0.18} />
+      <hemisphereLight args={["#c5d4e4", "#3a2418", 0.18]} />
+      <directionalLight position={[-2.6, 2.4, -1.2]} intensity={0.55} color="#9eb4cc" />
+      <pointLight position={[-1.2, 1.5, -1.7]} color="#b7cbe0" intensity={3.2} distance={4.5} decay={2} />
+      <pointLight position={[0.2, 0.55, -1.15]} color="#ffb07a" intensity={2.4} distance={3.2} decay={2} />
+      <RoomShell mats={mats} city={city} />
+      <Desk
         interactive={interactive}
         lang={lang}
         onLeave={() => onSelect({ kind: "room" })}
@@ -798,16 +690,36 @@ function OfficeScene({
         drag={drag}
         reduce={reduce}
       />
-      <Chair mats={mats} />
-      <Plant leaf={leaf} />
-      <Bookcase mats={mats} onSelect={onSelect} onHover={onHover} drag={drag} />
+      <Prop url={MODEL.chair} position={[0.02, 0, 0.78]} rotation={[0, Math.PI, 0]} />
+      <Prop url={MODEL.plant} position={[-1.72, 0, -1.25]} rotation={[0, 0.6, 0]} />
+      <Shelf onSelect={onSelect} onHover={onHover} drag={drag} />
       <WallFrames mats={mats} onSelect={onSelect} onHover={onHover} drag={drag} />
     </>
   );
 }
 
+function Grade({ intro, poseId }: { intro: { current: number }; poseId: string }) {
+  const dof = useRef<DepthOfFieldEffect | null>(null);
+  useFrame(() => {
+    if (!dof.current) return;
+    const t = intro.current;
+    const introBlur = poseId === "room" ? Math.max(0, 1 - t) : 0;
+    dof.current.bokehScale = introBlur * 1.7;
+  });
+  return (
+    <EffectComposer multisampling={0} enableNormalPass={false}>
+      <DepthOfField ref={dof} focusDistance={2.15} focalLength={0.9} bokehScale={1.4} />
+      <SMAA />
+      <Bloom intensity={0.32} luminanceThreshold={0.82} luminanceSmoothing={0.22} mipmapBlur />
+      <Vignette eskil={false} offset={0.18} darkness={0.62} />
+      <Noise opacity={0.018} />
+    </EffectComposer>
+  );
+}
+
 export default function OfficeCanvas({ lang, selection, onSelect, onHover, onOpenAssistant, onReady, onProgress }: Props) {
   const drag = useRef({ current: false });
+  const intro = useRef({ current: 0 });
   const pose = poseFor(selection);
 
   return (
@@ -820,14 +732,14 @@ export default function OfficeCanvas({ lang, selection, onSelect, onHover, onOpe
       onCreated={({ gl, scene }) => {
         gl.setClearColor("#070605");
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.05;
+        gl.toneMappingExposure = 1.02;
         gl.shadowMap.enabled = true;
-        scene.environmentIntensity = 0.16;
+        scene.environmentIntensity = 0.18;
         gl.domElement.style.cursor = "grab";
       }}
     >
       <LoadBridge onProgress={onProgress} onReady={onReady} />
-      <CameraRig pose={pose} drag={drag.current} />
+      <CameraRig pose={pose} drag={drag.current} introOut={intro.current} />
       <Suspense fallback={null}>
         <OfficeScene
           lang={lang}
@@ -838,12 +750,11 @@ export default function OfficeCanvas({ lang, selection, onSelect, onHover, onOpe
           drag={drag.current}
         />
       </Suspense>
-      <EffectComposer multisampling={0} enableNormalPass={false}>
-        <SMAA />
-        <Bloom intensity={0.28} luminanceThreshold={0.86} luminanceSmoothing={0.2} mipmapBlur />
-        <Vignette eskil={false} offset={0.22} darkness={0.68} />
-        <Noise opacity={0.02} />
-      </EffectComposer>
+      <Grade intro={intro.current} poseId={pose.id} />
     </Canvas>
   );
 }
+
+Object.values(MODEL).forEach((url) => {
+  useGLTF.preload(url);
+});

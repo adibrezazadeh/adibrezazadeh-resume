@@ -14,7 +14,7 @@ type Intent = {
 };
 
 function who(lang: Lang): string {
-  return `${person.name} (${person.nickname}) — ${person.roleLine[lang]}. ${person.location[lang]}. ${person.relocation[lang]}. ${person.summary[lang]}`;
+  return `${person.names[lang]} (${person.nickname}) — ${person.roleLine[lang]}. ${person.location[lang]}. ${person.relocation[lang]}. ${person.summary[lang]}`;
 }
 
 function contact(lang: Lang): string {
@@ -69,6 +69,7 @@ const intents: Intent[] = [
       "شاه رخ",
       "ادیب",
       "اديب",
+      "أديب",
       "رضازاده",
       "کیست",
       "کیه",

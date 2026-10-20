@@ -1,6 +1,6 @@
 # Shahrokh's office
 
-Portfolio of **Adib Rezazadeh** (Shahrokh), senior full-stack engineer and technical leader. The site is a low-poly office you can walk up to: the monitor opens **ShahrokhOS**, the frames are the work, the bookshelf is the stack, and the desk phone is contact.
+Portfolio of **Adib Rezazadeh** (Shahrokh), full-stack engineer and technical lead. Persian: ادیب رضازاده. Arabic: أديب رضازاده. The site is a lamp-lit office you can walk up to: the monitor opens **ShahrokhOS**, the frames are the work, the bookshelf is the stack, and the desk phone is contact.
 
 Languages: [English](/en), [فارسی](/fa), and [العربية](/ar). Persian and Arabic use RTL. A language picker is the front door.
 
@@ -30,7 +30,7 @@ npm start
 
 Facts come from Adib's resume. Stogite, Hubly, Glonova, and Meraas Gallery also use those projects' public pages. Nothing else is filled in.
 
-The room uses CC0 textures and the `studio_small_09` HDRI from [Poly Haven](https://polyhaven.com), compressed for the web. See `public/textures/CREDITS.txt`.
+The room uses CC0 photogrammetry models, textures, and the `studio_small_09` HDRI from [Poly Haven](https://polyhaven.com), compressed for the web. See `public/textures/CREDITS.txt`. Poly Haven does not publish a keyboard, mouse, or headphone scan, so those three are not in the room.
 
 ## Optional assistant API
 

@@ -21,7 +21,7 @@ export function SimpleSite({ lang, onEnterOffice }: { lang: Lang; onEnterOffice:
       <header className="topbar">
         <a className="wordmark" href={`/${lang}`}>
           <span>Shahrokh</span>
-          <small>{person.name}</small>
+          <small>{person.names[lang]}</small>
         </a>
         <nav aria-label={t.langLabel}>
           {LANG_LINKS.map((item) => (
@@ -37,7 +37,7 @@ export function SimpleSite({ lang, onEnterOffice }: { lang: Lang; onEnterOffice:
       <main id="content">
         <section className="hero">
           <p className="kicker">{person.nickname}</p>
-          <h1 className="display">{person.name}</h1>
+          <h1 className="display">{person.names[lang]}</h1>
           <p className="role">{person.roleLine[lang]}</p>
           <p className="meta">
             {person.location[lang]} · {person.relocation[lang]} · {person.years[lang]}

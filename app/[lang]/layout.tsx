@@ -29,7 +29,7 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
   if (!isLang(lang)) notFound();
   const dir = dirFor(lang);
   return (
-    <div className={dir === "rtl" ? "locale-rtl" : "locale-ltr"} lang={lang} dir={dir}>
+    <div className={lang === "ar" ? "locale-rtl locale-ar" : dir === "rtl" ? "locale-rtl" : "locale-ltr"} lang={lang} dir={dir}>
       <script
         dangerouslySetInnerHTML={{
           __html: `document.documentElement.lang=${JSON.stringify(lang)};document.documentElement.dir=${JSON.stringify(dir)};`,

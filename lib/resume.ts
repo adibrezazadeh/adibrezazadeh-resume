@@ -11,7 +11,7 @@ export function resumeText(lang: Lang): string {
   const t = ui[lang];
   const h = headings[lang];
   const blocks: string[] = [
-    `${person.name} (${person.nickname})`,
+    `${person.names[lang]} (${person.nickname})`,
     person.roleLine[lang],
     `${person.location[lang]} · ${person.relocation[lang]}`,
     "",
