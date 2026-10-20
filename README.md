@@ -25,7 +25,7 @@ An interactive 3D office portfolio you can walk into, in **English, Persian, and
    - `ui`: every interface string, per language (`en`, `fa`, `ar`)
 3. **Text built from that data**: `lib/resume.ts` (resume / downloadable text), `lib/terminal.ts` (terminal commands), `lib/assistant.ts` (desk assistant answers), `lib/seo.ts` and `lib/site.ts` (metadata, sitemap, JSON-LD).
 4. **Images**: put your portrait at `public/me.jpg`, project images in `public/frames/`, logos in `public/marks/`. Remove Adib's.
-5. **Fonts**: remove `app/fonts/emkan/` and change the `localFont` setup in `app/layout.tsx` to an openly licensed font.
+5. **Fonts**: Emkan is a licensed third-party font, not covered by MIT. Delete `app/fonts/emkan/` and the `localFont` block in `app/layout.tsx`, and point `--font-rtl` in `app/globals.css` at `var(--font-vazir)` (Vazirmatn, OFL).
 6. Drop a language by removing it from `LANGS` in `lib/types.ts` and its entries in `lib/profile.ts`.
 
 ## Deploy on Vercel
@@ -82,7 +82,7 @@ Facts come from Adib's resume and the projects' public sites. Nothing else is fi
 
 Put a square portrait at `public/me.jpg` and it appears in AdibOS's About window, at the top of simple mode, and in a frame on the shelf. Without the file, nothing is requested.
 
-The room uses CC0 models and textures from [Poly Haven](https://polyhaven.com), compressed for the web; the modern furniture and devices are modeled in code. See `public/textures/CREDITS.txt`. Persian and Arabic are set in Emkan (FontIran), used under the owner's licence. Emkan is **not** covered by the MIT license and must not be redistributed: swap it for an open font (for example Vazirmatn) in your fork.
+The room uses CC0 models and textures from [Poly Haven](https://polyhaven.com), compressed for the web; the modern furniture and devices are modeled in code. See `public/textures/CREDITS.txt`. Persian and Arabic are set in Emkan (FontIran), a licensed third-party font that is **not** covered by the MIT license and may not be redistributed. Forks should replace it with [Vazirmatn](https://github.com/rastikerdar/vazirmatn) (OFL), which is already loaded as the fallback.
 
 ## Optional assistant API
 
